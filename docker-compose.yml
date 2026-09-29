@@ -1,0 +1,68 @@
+version: '3.7'
+name: planner
+
+networks:
+  network-planner:
+    driver: bridge
+
+volumes:
+  postgres-planner-data:
+    external: false
+  test-postgres-planner-data:
+    external: false
+
+services:
+  postgres-planner:
+    image: postgres:16.0-alpine
+    container_name: postgres-planner
+    hostname: postgres-planner
+    environment:
+      POSTGRES_USER: api_user
+      POSTGRES_PASSWORD: api_pass
+      POSTGRES_DB: planner_db
+      PGTZ: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-planner-data:/var/lib/postgresql/data
+    command: postgres -c timezone=America/Sao_Paulo
+    networks:
+      - network-planner
+
+  test-postgres-planner:
+    image: postgres:16.0-alpine
+    container_name: test-postgres-planner
+    hostname: test-postgres-planner
+    environment:
+      POSTGRES_USER: api_user_test
+      POSTGRES_PASSWORD: api_pass_test
+      POSTGRES_DB: planner_db_test
+      PGTZ: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+    ports:
+      - "5433:5432"
+    volumes:
+      - test-postgres-planner-data:/var/lib/postgresql/data
+    command: postgres -c timezone=America/Sao_Paulo
+    networks:
+      - network-planner
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres-planner
+    container_name: api-planner
+    hostname: api-planner
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api-planner:/usr/src/app
+      - /usr/src/app/node_modules
+    tty: true
+    networks:
+      - network-planner
+    env_file:
+      - ./api/.env
