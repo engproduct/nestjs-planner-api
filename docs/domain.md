@@ -10,27 +10,28 @@ Modelo de domínio e regras de negócio derivadas do [PRD](./prd.md), para orien
 
 **Planner / prontuário simplificado:** suporte ao trabalho do **médico** com **pacientes**, **agenda de consultas** e **registro de observações** clínicas por atendimento. Não inclui billing, prescrição eletrônica, integração com laboratórios ou portal do paciente na v1.
 
-**Ator principal:** médico (`Doctor`). Paciente não autentica no escopo inicial do case.
+**Ator principal:** médico, representado por um `User` com `role = DOCTOR`. Paciente não autentica no escopo inicial do case.
 
 ---
 
 ## Linguagem ubíqua (resumo)
 
-| Termo              | Significado no domínio                                             |
-| ------------------ | ------------------------------------------------------------------ |
-| Paciente           | Pessoa cadastrada com dados demográficos e antropométricos         |
-| Médico             | Profissional dono da agenda e autor das anotações                  |
-| Agendamento        | Slot de consulta entre médico e paciente em intervalo de tempo     |
-| Observação         | Texto clínico/anotação vinculada a um agendamento                  |
-| Agenda             | Conjunto de agendamentos de um médico                              |
-| Perfil do paciente | Dados cadastrais editáveis do paciente                             |
-| Histórico clínico  | Conjunto de observações associadas aos agendamentos de um paciente |
+| Termo              | Significado no domínio                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| Paciente           | Pessoa cadastrada com dados demográficos e antropométricos                              |
+| Usuário            | Identidade do usuário do sistema                                                        |
+| Médico             | Usuário com `role = DOCTOR`, profissional responsável pela agenda e autor das anotações |
+| Agendamento        | Slot de consulta entre médico e paciente em intervalo de tempo                          |
+| Observação         | Texto clínico/anotação vinculada a um agendamento                                       |
+| Agenda             | Conjunto de agendamentos de um médico                                                   |
+| Perfil do paciente | Dados cadastrais editáveis do paciente                                                  |
+| Histórico clínico  | Conjunto de observações associadas aos agendamentos de um paciente                      |
 
 ---
 
 ## Agregados e entidades
 
-Convenção: **raiz de agregado** expõe `uuid` na API; referências entre agregados usam `uuid` ou id interno validado na aplicação.
+Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na API. Referências entre agregados usam identidade (`uuid` ou id interno, conforme a camada), e não objetos ou agregados aninhados.
 
 ### Agregado `Patient` (Paciente)
 
@@ -48,24 +49,38 @@ Convenção: **raiz de agregado** expõe `uuid` na API; referências entre agreg
 * Listar pacientes ativos
 * Editar perfil
 
-**Consistência:** alterações de perfil não alteram agendamentos passados; identidade do paciente (`uuid`) permanece estável.
+**Consistência:**
+
+Alterações de perfil não alteram agendamentos passados; a identidade do paciente (`uuid`) permanece estável.
 
 ---
 
-### Agregado `Doctor` (Médico)
+### Agregado `User` (Usuário)
 
-**Raiz:** `Doctor`
+**Raiz:** `User`
 
-| Campo       | Regra                                                |
-| ----------- | ---------------------------------------------------- |
-| name, email | Identificação do médico                              |
-| password    | Credencial (hash); usado quando autenticação existir |
-| deletedAt   | Soft delete                                          |
+`User` representa a identidade do usuário do sistema. No contexto atual, um médico é representado por um `User` cujo `role` é `DOCTOR`.
+
+| Campo                | Regra                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| name, surname, email | Dados de identificação do usuário                                                    |
+| passwordHash         | Credencial armazenada como hash; nunca armazenar senha em texto puro                 |
+| role                 | Define o papel/autorização do usuário; no contexto atual, `DOCTOR` representa médico |
+| deletedAt            | Soft delete                                                                          |
 
 **Comportamentos:**
 
-* Cadastro/gestão mínima para vincular agendamentos
-* Login/JWT fora do slice inicial, salvo issue de auth
+* Cadastro/gestão mínima de usuários
+* Vinculação de agendamentos ao usuário responsável
+* Autenticação/JWT fora do slice inicial, salvo issue específica de auth
+* Autorização baseada em `role` quando autenticação estiver implementada
+
+**Consistência:**
+
+* Um `User` com `role = DOCTOR` pode atuar como médico no domínio.
+* Não existe agregado `Doctor` separado.
+* `Appointment` referencia o `User` responsável por meio de `userId`.
+* A aplicação deve validar que o `User` associado ao agendamento possui `role = DOCTOR`.
 
 ---
 
@@ -75,18 +90,18 @@ Convenção: **raiz de agregado** expõe `uuid` na API; referências entre agreg
 
 O `Appointment` representa o vínculo entre um paciente e um médico em determinado intervalo de tempo.
 
-| Campo              | Regra                                              |
-| ------------------ | -------------------------------------------------- |
-| patientId          | Deve referenciar paciente existente e não excluído |
-| doctorId           | Deve referenciar médico existente e não excluído   |
-| startTime, endTime | Intervalo válido: `startTime < endTime`            |
-| description        | Contexto/motivo do agendamento                     |
-| deletedAt          | Soft delete; exclusão lógica do agendamento        |
+| Campo              | Regra                                                                 |
+| ------------------ | --------------------------------------------------------------------- |
+| patientId          | Deve referenciar paciente existente e não excluído                    |
+| userId             | Deve referenciar `User` existente, não excluído e com `role = DOCTOR` |
+| startTime, endTime | Intervalo válido: `startTime < endTime`                               |
+| description        | Contexto/motivo do agendamento                                        |
+| deletedAt          | Soft delete; exclusão lógica do agendamento                           |
 
 **Relacionamentos:**
 
 * Um `Appointment` pertence a um `Patient`.
-* Um `Appointment` pertence a um `Doctor`.
+* Um `Appointment` pertence a um `User` com `role = DOCTOR`.
 * Um `Appointment` pode possuir zero ou várias `Observation`.
 * `Observation` não faz parte da identidade do `Appointment`.
 
@@ -97,7 +112,9 @@ O `Appointment` representa o vínculo entre um paciente e um médico em determin
 * Consultar observações associadas ao agendamento
 * Consultar histórico de observações de um paciente
 
-**Referências:** o agregado referencia `Patient` e `Doctor` por id; validação de existência na camada de aplicação antes de persistir.
+**Referências:**
+
+O agregado referencia `Patient` e `User` por identidade. A camada de aplicação valida a existência e o estado dos agregados referenciados antes de persistir o agendamento.
 
 ---
 
@@ -119,7 +136,7 @@ Uma `Observation` representa uma anotação clínica registrada no contexto de u
 
 * Uma `Observation` pertence a exatamente um `Appointment`.
 * Um `Appointment` pode possuir zero ou várias `Observation`.
-* `Observation` não referencia diretamente `Patient` ou `Doctor`.
+* `Observation` não referencia diretamente `Patient` ou `User`.
 * O paciente e o médico da observação são determinados indiretamente pelo `Appointment`.
 
 **Comportamentos (casos de uso):**
@@ -135,16 +152,16 @@ Uma `Observation` representa uma anotação clínica registrada no contexto de u
 * Não é permitido criar uma `Observation` para um `Appointment` inexistente.
 * Não é permitido criar uma `Observation` para um `Appointment` soft-deleted.
 * A exclusão de uma `Observation` não exclui o `Appointment`.
-* A alteração dos dados do `Patient` ou `Doctor` não altera o conteúdo histórico da `Observation`.
+* A alteração dos dados do `Patient` ou `User` não altera o conteúdo histórico da `Observation`.
 * A `Observation` mantém sua própria identidade (`uuid`).
 
 ---
 
 ## Relação entre agregados
 
-`Appointment` e `Observation` são agregados independentes.
+`Patient`, `User`, `Appointment` e `Observation` são agregados independentes.
 
-A referência entre eles ocorre por `appointmentId`, evitando que o agregado `Appointment` precise carregar toda a coleção de observações em memória ou que uma alteração em uma observação exija carregar o agregado inteiro.
+As referências entre agregados ocorrem por identidade, evitando que um agregado precise carregar ou alterar outro agregado diretamente.
 
 ```mermaid
 flowchart LR
@@ -153,8 +170,8 @@ flowchart LR
     Patient[Patient RAIZ]
   end
 
-  subgraph doctorAgg [Agregado Doctor]
-    Doctor[Doctor RAIZ]
+  subgraph userAgg [Agregado User]
+    User[User RAIZ]
   end
 
   subgraph appointmentAgg [Agregado Appointment]
@@ -166,7 +183,7 @@ flowchart LR
   end
 
   Appointment -->|patientId| Patient
-  Appointment -->|doctorId| Doctor
+  Appointment -->|userId| User
   Observation -->|appointmentId| Appointment
 ```
 
@@ -181,11 +198,10 @@ Observation
              |
              v
        Appointment
-             |
-       +-----+-----+
-       |           |
-       v           v
-    Patient      Doctor
+          |      |
+          |      +-- userId --> User
+          |
+          +-- patientId --> Patient
 ```
 
 Isso permite que cada agregado tenha ciclo de vida e consistência próprios.
@@ -217,11 +233,12 @@ Isso permite que cada agregado tenha ciclo de vida e consistência próprios.
 ### Invariantes (sempre verdadeiras)
 
 * I1: `startTime < endTime` em todo agendamento persistido.
-* I2: Não criar agendamento para paciente ou médico inexistente ou soft-deleted.
-* I3: Não criar observação para agendamento inexistente ou soft-deleted.
-* I4: Toda `Observation` pertence a exatamente um `Appointment`.
-* I5: `Observation` não possui vínculo direto com `Patient` ou `Doctor`.
-* I6: APIs REST expõem recursos coerentes com [architecture.md](./architecture.md) (JSON, códigos HTTP adequados).
+* I2: Não criar agendamento para paciente inexistente ou soft-deleted.
+* I3: Não criar agendamento para `User` inexistente, soft-deleted ou sem `role = DOCTOR`.
+* I4: Não criar observação para agendamento inexistente ou soft-deleted.
+* I5: Toda `Observation` pertence a exatamente um `Appointment`.
+* I6: `Observation` não possui vínculo direto com `Patient` ou `User`.
+* I7: APIs REST expõem recursos coerentes com [architecture.md](./architecture.md) (JSON, códigos HTTP adequados).
 
 ---
 
@@ -230,10 +247,15 @@ Isso permite que cada agregado tenha ciclo de vida e consistência próprios.
 Quando R10 for implementada:
 
 1. **Solicitação de exclusão de dados pessoais** do paciente.
+
 2. **Campos PII** (`name`, `phone`, `email`, `birthDate`, etc.) anonimizados ou substituídos por placeholders irreversíveis.
+
 3. **Agendamentos** permanecem com horários e demais dados necessários para retenção histórica.
+
 4. **Observações clínicas** permanecem sujeitas à política específica de retenção e anonimização definida para o prontuário.
+
 5. Vínculos técnicos entre `Patient`, `Appointment` e `Observation` devem impedir reidentificação indevida após anonimização.
+
 6. Operação **idempotente** e auditável (`updatedAt`).
 
 Ajuste fino jurídico/produto deve ser registrado neste arquivo antes do agente implementar o caso de uso.
@@ -257,7 +279,7 @@ Ajuste fino jurídico/produto deve ser registrado neste arquivo antes do agente 
 1. **Patient** — R1, R2
 2. **Appointment** — R3, R4
 3. **Observation** — R5, R6, R7, R8
-4. **Doctor + Auth** — JWT (desejável PRD)
+4. **User + Auth** — JWT e autorização (desejável PRD)
 5. **Agenda** — R9
 6. **LGPD** — R10
 

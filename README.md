@@ -4,8 +4,6 @@
 
 Caso de desafio backend para a construção de um prontuário eletrônico em NestJS, com desenvolvimento assistido por IA (harness). Requisitos e engenharia (**DDD**, **TDD**, fluxo agêntico): **[documentação em `docs/`](./docs/README.md)** — comece pelo [PRD](./docs/prd.md).
 
-Relacionado: issue **Setup Harness Inicial** (#1).
-
 ---
 
 ### Run
