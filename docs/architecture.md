@@ -122,7 +122,6 @@ erDiagram
         int patientId
         int doctorId
         string description
-        string observation
         datetime startTime
         datetime endTime
         datetime createdAt
@@ -139,9 +138,19 @@ erDiagram
         datetime updatedAt
         datetime deletedAt
     }
+    observation {
+        int id
+        UUID uuid
+        int appointment_id
+        string message
+        datetime createdAt
+        datetime updatedAt
+        datetime deletedAt
+    }
 
     patient ||--o{ appointment : has
     doctor ||--o{ appointment : has
+    appointment ||--o{ observation : has
 ```
 
 Mapeamento DDD ↔ tabelas: ver agregados em [domain.md](./domain.md).
