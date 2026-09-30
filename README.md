@@ -1,62 +1,31 @@
 # NestJS Planner API
 
-### About:
+### About
 
-Caso de desafio backend para a construcao de um agendador de horarios em NestJS com desenvolvimento assistido por IA utilizando tecnicas harness, [maiores detalhes no PRD](./docs/prd.md)
+Caso de desafio backend para a construção de um prontuário eletrônico em NestJS, com desenvolvimento assistido por IA (harness). Requisitos e engenharia (**DDD**, **TDD**, fluxo agêntico): **[documentação em `docs/`](./docs/README.md)** — comece pelo [PRD](./docs/prd.md).
+
+Relacionado: issue **Setup Harness Inicial** (#1).
 
 ---
 
-### Run:
+### Run
 
 ```
 $ cd planner-api
+$ nvm use 24.21.0
 $ yarn run start
 ```
 
+Postgres (dev/test): ver [docker-compose.yml](./docker-compose.yml) e [architecture.md](./docs/architecture.md).
+
 ---
 
- ### Diagrams:
+### Validate
 
-```mermaid
-erDiagram 
-    patient {
-        int id
-        UUID uuid
-        string name
-        string phone
-        string email
-        date birthDate
-        enum gender
-        decimal height
-        decimal weight
-        datetime createdAt
-        datetime updatedAt
-        datetime deletedAt
-    }
-    appointment {
-        int id
-        UUID uuid
-        int patientId
-        int doctorId
-        string description
-        string observation
-        datetime startTime
-        datetime endTime
-        datetime createdAt
-        datetime updatedAt
-        datetime deletedAt
-    }
-    doctor {
-        int id
-        UUID uuid
-        string name
-        string email
-        string password
-        datetime createdAt
-        datetime updatedAt
-        datetime deletedAt
-    }
-
-    patient ||--o{ appointment : has
-    doctor ||--o{ appointment : has
+```
+$ cd planner-api
+$ nvm use 24.21.0
+$ yarn lint
+$ yarn test
+$ yarn test:e2e
 ```

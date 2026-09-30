@@ -20,7 +20,7 @@ Pessoa atendida pelo médico. Dados previstos no PRD: nome, telefone, e-mail, da
 
 ### Agendamento de consulta (`Appointment`)
 
-Compromisso na agenda do médico para atender um **paciente** em um intervalo de tempo (`startTime` / `endTime`). Inclui descrição do motivo ou contexto e, após ou durante o atendimento, a **observação** registrada pelo médico. No diagrama ER, liga **Patient** e **Doctor**. “Consulta” no linguajar do PRD refere-se ao encontro clínico representado por este agendamento (não a um tipo separado de entidade).
+Compromisso na agenda do médico para atender um **paciente** em um intervalo de tempo (`startTime` / `endTime`). Inclui descrição do motivo ou contexto e, após ou durante o atendimento, a **observação** registrada pelo médico. No [diagrama ER](./architecture.md#modelo-de-dados-er), liga **Patient** e **Doctor**. “Consulta” no linguajar do PRD refere-se ao encontro clínico representado por este agendamento (não a um tipo separado de entidade).
 
 ### Observação (de consulta)
 
@@ -48,7 +48,7 @@ Informações que identificam ou podem identificar uma pessoa natural. No escopo
 
 ### Exclusão de dados pessoais (LGPD)
 
-Requisito desejável: permitir **apagar ou anonimizar** os dados pessoais do paciente (direito do titular / adequação legal), **mantendo** registros necessários de **agendamentos** e **observações** para fins de contabilidade ou histórico clínico mínimo — conforme regra de negócio a detalhar em `domain.md` (o que permanece, em que forma).
+Requisito desejável: permitir **apagar ou anonimizar** os dados pessoais do paciente (direito do titular / adequação legal), **mantendo** registros necessários de **agendamentos** e **observações** para fins de contabilidade ou histórico clínico mínimo — ver regra **R8** e política LGPD em [domain.md](./domain.md).
 
 ### Soft delete (`deletedAt`)
 
@@ -102,9 +102,17 @@ Teste que exercita a aplicação de ponta a ponta (HTTP + banco real ou de teste
 
 *Product Requirements Document* — enunciado de requisitos; versão canônica neste repo: [prd.md](./prd.md).
 
+### DDD (Domain-Driven Design)
+
+Modelagem centrada no domínio: agregados, regras de negócio e linguagem ubíqua. Neste repo, módulos Nest e regras seguem [domain.md](./domain.md) e [architecture.md](./architecture.md).
+
+### TDD (Test-Driven Development)
+
+Desenvolvimento guiado por testes (red → green → refactor). Comportamento do PRD vira testes e2e/unitários antes ou junto da implementação mínima.
+
 ### Harness (desenvolvimento assistido)
 
-Conjunto de práticas e artefatos (PRD, glossário, domínio, testes, CI, regras para agente) que tornam o trabalho com IA **verificável**: spec clara + comando repetível (`lint`, `test`) + critérios de aceite.
+Conjunto de práticas e artefatos (PRD, glossário, domínio, arquitetura, testes, CI, regras para agente) que tornam o trabalho com IA **verificável**: spec clara + comando repetível (`lint`, `test`) + critérios de aceite.
 
 ### Vertical slice
 
@@ -124,4 +132,4 @@ Incremento fino que entrega um fluxo completo (ex.: criar paciente via API + per
 
 ---
 
-*Última atualização: alinhado ao PRD e ao diagrama ER do [README](../README.md).*
+*Última atualização: alinhado ao PRD e ao diagrama ER em [architecture.md](./architecture.md).*

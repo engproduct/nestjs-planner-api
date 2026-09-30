@@ -1,13 +1,12 @@
+# Case Dev Backend
 
- # Case Dev Backend:
+Implementação neste repositório: NestJS, TypeScript, PostgreSQL, Prisma — ver [architecture.md](./architecture.md) e [domain.md](./domain.md).
  
 Construir o backend para um sistema de prontuário eletrônico onde o médico pode
 cadastrar as informações do paciente como nome, telefone, data de nascimento, sexo,
 altura e peso e fazer os registros das consultas realizadas por paciente.
 
- <br/>
-
- ## 1. Requisitos funcionais:
+## 1. Requisitos funcionais
  
  - __Requisitos obrigatórios:__
    - Eu, como médico, quero poder cadastrar um paciente com os seguintes
@@ -25,9 +24,7 @@ eu cadastrar mais de um paciente na mesma hora.
    - Eu, como médico, quero poder excluir os dados pessoais do paciente por causa
 das novas regras do LGPD, mas mantendo o histórico de consulta por questões de contabilidade
 
-<br/>
-
-  ## 2. Requisitos não funcionais:
+## 2. Requisitos não funcionais
 
  - __Requisitos obrigatórios__
    - Deve usar o padrão de API REST (HTTP/JSON);
