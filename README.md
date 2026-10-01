@@ -6,23 +6,37 @@ Caso de desafio backend para a construção de um prontuário eletrônico em Nes
 
 ---
 
+### Setup
+
+Node é fixado em [`.nvmrc`](./.nvmrc) (24.21.0) e em `engines` no `package.json`.
+
+```
+$ nvm use
+$ docker compose up -d                 # Postgres dev (:5432) e teste (:5433)
+$ cd planner-api
+$ cp .env.example .env
+$ cp .env.test.example .env.test
+$ yarn install
+```
+
+---
+
 ### Run
 
 ```
 $ cd planner-api
-$ nvm use 24.21.0
-$ yarn run start
+$ yarn start:dev
 ```
 
-Postgres (dev/test): ver [docker-compose.yml](./docker-compose.yml) e [architecture.md](./docs/architecture.md).
+API em container (opcional): `docker compose --profile api up`. Detalhes em [docker-compose.yml](./docker-compose.yml) e [architecture.md](./docs/architecture.md).
 
 ---
 
 ### Validate
 
 ```
+$ nvm use
 $ cd planner-api
-$ nvm use 24.21.0
 $ yarn lint
 $ yarn test
 $ yarn test:e2e

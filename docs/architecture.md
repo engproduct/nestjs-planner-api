@@ -217,7 +217,35 @@ Mapeamento DDD ↔ tabelas: ver agregados em [domain.md](./domain.md).
 | Desenvolvimento      | `postgres-planner` :5432      | App local (`yarn start:dev`) |
 | Testes automatizados | `test-postgres-planner` :5433 | e2e e integração             |
 
-Variáveis de conexão via `@nestjs/config` e `.env.example` (a definir na fundação técnica). O serviço `api` no compose ainda referencia paths legados (`./api`); execução atual documentada no [README](../README.md) a partir de `planner-api/`.
+Variáveis de ambiente documentadas em [`planner-api/.env.example`](../planner-api/.env.example) (dev) e [`planner-api/.env.test.example`](../planner-api/.env.test.example) (testes), com os mesmos nomes: `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA`. As credenciais ficam separadas (facilita a injeção por secret manager e a rotação de senha, e evita erros de escape); a URL de conexão é montada em código (`ConfigModule` para a aplicação, `prisma.config.ts` para o CLI do Prisma), com usuário e senha URL-encoded. O carregamento via `@nestjs/config` entra na fundação técnica (ver [Configuração por ambiente](#configuração-por-ambiente)). O serviço `api` do compose é opcional (profile `api`, `docker compose --profile api up`) e roda `yarn start:dev` a partir de `planner-api/`; o fluxo padrão roda a API no host, conforme o [README](../README.md).
+
+### Configuração por ambiente
+
+Duas variáveis com papéis distintos, ambas definidas pelo **processo** (shell, scripts, Vitest, Dockerfile ou plataforma) e **nunca** em arquivo `.env`:
+
+| Variável   | Valores                                              | Papel                                                                                     |
+| ---------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `NODE_ENV` | `development` \| `test` \| `production`             | Modo do runtime e das bibliotecas (otimizações, verbosidade de erros). Staging usa `production`. |
+| `APP_ENV`  | `development` \| `test` \| `staging` \| `production` | Ambiente de implantação: seleciona o arquivo `.env.<APP_ENV>`, defaults e rótulos de logs/métricas. |
+
+Por que não usar `NODE_ENV=staging`: o ecossistema Node só ativa o comportamento de produção com `NODE_ENV=production`; qualquer outro valor faz o staging rodar em modo de desenvolvimento, deixando de ser um ensaio fiel da produção. Além disso, bibliotecas leem `NODE_ENV` no import, antes do carregamento de arquivos `.env`. `APP_ENV` também não pode vir de `.env`, pois é ele que decide qual arquivo carregar.
+
+| `APP_ENV`     | `NODE_ENV`    | Origem das variáveis                                    | Definido por                                  |
+| ------------- | ------------- | ------------------------------------------------------- | --------------------------------------------- |
+| `development` | `development` | `.env.development.local`, `.env.development`, `.env`     | default quando ausente                        |
+| `test`        | `test`        | `.env.test.local`, `.env.test` (**sem** fallback para `.env`) | config do Vitest (`test.env`); `NODE_ENV` pelo próprio Vitest |
+| `staging`     | `production`  | plataforma / secret manager (sem arquivo `.env`)         | plataforma de deploy                          |
+| `production`  | `production`  | plataforma / secret manager (sem arquivo `.env`)         | plataforma de deploy                          |
+
+Variáveis reais do processo têm precedência sobre arquivos; entre arquivos, o primeiro da lista vence. A ausência de fallback em teste evita que uma variável esquecida em `.env.test` seja herdada do `.env` e faça os testes atingirem o banco de desenvolvimento.
+
+Regras de implementação (fundação técnica, `@nestjs/config`):
+
+* `ConfigModule.forRoot` global, com `envFilePath` derivado de `APP_ENV` e `ignoreEnvFile` em `staging`/`production`.
+* Validação no boot (schema zod ou Joi): enum de `APP_ENV`, tipos numéricos (`PORT`, `DB_PORT`), obrigatoriedade das credenciais. Configuração inválida impede a aplicação de subir.
+* Configuração tipada (`registerAs` ou serviço de config); nenhum outro ponto do código lê `process.env`. A URL do banco é montada aqui.
+* Comportamento por ambiente via **flags explícitas** (`LOG_LEVEL`, `SWAGGER_ENABLED`, `CORS_ORIGINS`, …) com defaults por `APP_ENV`, em vez de condicionais `if (APP_ENV === 'staging')` espalhadas.
+* Imagem de produção (multi-stage, `NODE_ENV=production`, `start:prod`) entra junto com o deploy; o `Dockerfile` atual é apenas de desenvolvimento.
 
 ---
 

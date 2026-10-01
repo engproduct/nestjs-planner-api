@@ -1,0 +1,56 @@
+name: PR template
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Validate PR description
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = (context.payload.pull_request.body ?? '')
+              .replace(/<!--[\s\S]*?-->/g, '')
+              .replace(/\r\n/g, '\n');
+
+            const section = (title) => {
+              const match = body.match(new RegExp(`^## ${title}[ \\t]*\\n([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, 'm'));
+              return match ? match[1] : null;
+            };
+            const meaningful = (text) =>
+              text.replace(/<br\s*\/?>/gi, '').trim().length > 0;
+
+            const errors = [];
+            const motivo = section('Motivo');
+            const comoTestar = section('Como Testar');
+
+            if (motivo === null) {
+              errors.push('Seção "## Motivo" ausente.');
+            } else {
+              const link = /\[Tarefa no project\]\((https:\/\/github\.com\/[^)\s]*projects\/[^)\s]+)\)/;
+              if (!link.test(motivo)) {
+                errors.push('"## Motivo" deve conter [Tarefa no project](<url do item no GitHub Project>).');
+              }
+              const definicao = motivo.replace(/\[Tarefa no project\]\([^)]*\)/, '');
+              if (/#\{[^}]*\}/.test(definicao) || !meaningful(definicao)) {
+                errors.push('"## Motivo" deve trazer a definição da tarefa (substitua o placeholder #{...}).');
+              }
+            }
+
+            if (comoTestar === null) {
+              errors.push('Seção "## Como Testar" ausente.');
+            } else if (/#\{[^}]*\}/.test(comoTestar) || !meaningful(comoTestar)) {
+              errors.push('"## Como Testar" deve descrever como testar (substitua o placeholder #{...}).');
+            }
+
+            if (errors.length > 0) {
+              core.setFailed(
+                'A descrição do PR não segue .github/pull_request_template.md:\n- ' + errors.join('\n- '),
+              );
+            }
