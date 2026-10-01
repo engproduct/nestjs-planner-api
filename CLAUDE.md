@@ -85,4 +85,10 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 
 ## Estado atual
 
-Scaffold Nest + documentação. Ainda **não instalados**: Prisma, `@nestjs/config`, `ValidationPipe`/class-validator, Swagger, infraestrutura de banco nos testes e2e e CI. Essa fundação é a próxima fatia; não assuma que existem.
+Fundação técnica pronta; nenhuma fatia de domínio implementada ainda (próxima: Patient, R1/R2).
+
+- Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
+- Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.
+- `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`) e Swagger (`/docs`) em `src/app.setup.ts`, usado por `main.ts` e pelos e2e.
+- E2E: use `createTestApp()` e `resetDatabase(app)` de `planner-api/test/utils/`.
+- CI: `.github/workflows/ci.yml` roda lint + unit + e2e em todo PR.
