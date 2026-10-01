@@ -16,8 +16,10 @@ $ docker compose up -d                 # Postgres dev (:5432) e teste (:5433)
 $ cd planner-api
 $ cp .env.example .env
 $ cp .env.test.example .env.test
-$ yarn install
+$ yarn install                        # também gera o Prisma Client
 ```
+
+Swagger em http://localhost:3000/docs e healthcheck em http://localhost:3000/health.
 
 ---
 
