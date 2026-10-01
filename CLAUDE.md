@@ -63,6 +63,12 @@ Cada entrega é uma **fatia vertical** (ordem em [domain.md](docs/domain.md#mape
 
 Branches: `feat/<descricao>-<issue>`, `fix/...`, `chore/...`, `docs/...`. Commits no padrão Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`). Nunca commitar direto na `main`.
 
+Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github/pull_request_template.md):
+
+- `## Motivo`: definição da tarefa + `[Tarefa no project](<url do item no GitHub Project>)`; inclua `Closes #<issue>` para vincular a issue.
+- `## Como Testar`: passos reproduzíveis (comandos, requests, resultado esperado).
+- Nenhum placeholder `#{...}` pode permanecer. O workflow [pr-template.yml](.github/workflows/pr-template.yml) reprova PRs fora do padrão.
+
 ## Convenções de código
 
 - **ESM:** imports relativos com extensão `.js` (`import { X } from './x.js'`).
