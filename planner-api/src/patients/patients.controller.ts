@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Query,
@@ -19,6 +20,7 @@ import { ApiPaginatedResponse } from '../common/pagination/api-paginated-respons
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
 import { Paginated } from '../common/pagination/paginated.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
+import { UpdatePatientDto } from './dto/update-patient.dto.js';
 import { PatientResponseDto } from './dto/patient-response.dto.js';
 import { PatientsService } from './patients.service.js';
 
@@ -52,5 +54,17 @@ export class PatientsController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<PatientResponseDto> {
     return this.patientsService.findOne(uuid);
+  }
+
+  @Patch(':uuid')
+  @ApiOkResponse({ type: PatientResponseDto })
+  @ApiBadRequestResponse({ description: 'Dados ou uuid inválidos' })
+  @ApiNotFoundResponse({ description: 'Paciente inexistente ou excluído' })
+  @ApiConflictResponse({ description: 'Email já usado por outro paciente' })
+  update(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdatePatientDto,
+  ): Promise<PatientResponseDto> {
+    return this.patientsService.update(uuid, dto);
   }
 }
