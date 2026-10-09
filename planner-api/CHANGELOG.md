@@ -17,6 +17,11 @@ Patient 4/4: edição (#23, parte de #6). Conclui a fatia Patient (R1, R2).
 - `CLAUDE.md` (Estado atual): Patient pronta (R1, R2); próxima: Appointment (#24).
 - `version` do `package.json` e do Swagger para 0.9.0.
 
+### Corrigido
+
+- `PATCH /patients/:uuid` com `null` em qualquer campo respondia 500; agora responde 400 (`PartialType` com `skipNullProperties: false`).
+- `name` só com espaços era aceito no cadastro e na edição; agora passa por trim e, vazio, responde 400.
+
 ## [0.8.0] - 2026-10-09
 
 Patient 3/4: listagem paginada (#22, parte de #6).
