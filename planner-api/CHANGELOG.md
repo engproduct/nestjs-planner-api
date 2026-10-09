@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.5.0] - 2026-10-09
+
+Fundação técnica 5/5 (#12, parte de #5).
+
+### Adicionado
+
+- CI (`.github/workflows/ci.yml`): lint, unit e e2e com Postgres como service, em todo PR e push na `main`.
+- Regra de release: passo "Release" e DoD no `CLAUDE.md`, racional no `docs/architecture.md`, job em `pr-template.yml` que exige CHANGELOG e `version` alterados e workflow `release-tag.yml` que cria a tag `v<version>` no merge na `main`.
+- Links de diff entre versões no rodapé do CHANGELOG (`compare/vA...vB`), exigidos pelo job de release do `pr-template.yml`.
+
+### Alterado
+
+- `CLAUDE.md` (Estado atual), `README.md` e `docs/architecture.md` refletem a fundação pronta.
+- `version` do `package.json` e do Swagger para 0.5.0.
+
 ## [0.4.0] - 2026-10-09
 
 Fundação técnica 4/5 (#11, parte de #5).
@@ -64,6 +79,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.5.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.1.0...v0.2.0
