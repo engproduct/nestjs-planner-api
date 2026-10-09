@@ -69,6 +69,7 @@ Issues e branches (ex.: `feat/initial-harness-setup-1`, Setup Harness Inicial #1
 | Framework HTTP | NestJS 12             | Módulos, injeção de dependência, pipes de validação                        |
 | Persistência   | PostgreSQL 16         | Dev: porta 5432; teste: 5433 ([docker-compose.yml](../docker-compose.yml)) |
 | Acesso a dados | **Prisma**            | Schema em `schema.prisma`; migrations versionadas                          |
+| Configuração   | `@nestjs/config` + zod | Validação e tipagem das variáveis no boot ([Configuração por ambiente](#configuração-por-ambiente)) |
 | API            | REST JSON             | OpenAPI/Swagger (NFR do PRD)                                               |
 | Testes         | Vitest + Supertest    | Unit + e2e (`vitest.config.e2e.ts`)                                        |
 | Qualidade      | oxlint + Prettier     | Scripts em `planner-api/package.json`                                      |
@@ -123,6 +124,7 @@ Estrutura física alvo em `planner-api/src/` (evolutiva):
 * `observations/` — observações clínicas
 * `auth/` — autenticação/autorização JWT, quando implementada
 * `prisma/` — schema e migrations (ou na raiz de `planner-api` conforme `prisma init`)
+* `config/` — carregamento, validação e tipagem das variáveis de ambiente; montagem da URL do banco
 
 ---
 
@@ -217,7 +219,7 @@ Mapeamento DDD ↔ tabelas: ver agregados em [domain.md](./domain.md).
 | Desenvolvimento      | `postgres-planner` :5432      | App local (`yarn start:dev`) |
 | Testes automatizados | `test-postgres-planner` :5433 | e2e e integração             |
 
-Variáveis de ambiente documentadas em [`planner-api/.env.example`](../planner-api/.env.example) (dev) e [`planner-api/.env.test.example`](../planner-api/.env.test.example) (testes), com os mesmos nomes: `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA`. As credenciais ficam separadas (facilita a injeção por secret manager e a rotação de senha, e evita erros de escape); a URL de conexão é montada em código (`ConfigModule` para a aplicação, `prisma.config.ts` para o CLI do Prisma), com usuário e senha URL-encoded. O carregamento via `@nestjs/config` entra na fundação técnica (ver [Configuração por ambiente](#configuração-por-ambiente)). O serviço `api` do compose é opcional (profile `api`, `docker compose --profile api up`) e roda `yarn start:dev` a partir de `planner-api/`; o fluxo padrão roda a API no host, conforme o [README](../README.md).
+Variáveis de ambiente documentadas em [`planner-api/.env.example`](../planner-api/.env.example) (dev) e [`planner-api/.env.test.example`](../planner-api/.env.test.example) (testes), com os mesmos nomes: `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SCHEMA`. As credenciais ficam separadas (facilita a injeção por secret manager e a rotação de senha, e evita erros de escape); a URL de conexão é montada em código (`ConfigModule` para a aplicação, `prisma.config.ts` para o CLI do Prisma), com usuário e senha URL-encoded. O carregamento via `@nestjs/config` está descrito em [Configuração por ambiente](#configuração-por-ambiente). O serviço `api` do compose é opcional (profile `api`, `docker compose --profile api up`) e roda `yarn start:dev` a partir de `planner-api/`; o fluxo padrão roda a API no host, conforme o [README](../README.md).
 
 ### Configuração por ambiente
 
@@ -239,12 +241,17 @@ Por que não usar `NODE_ENV=staging`: o ecossistema Node só ativa o comportamen
 
 Variáveis reais do processo têm precedência sobre arquivos; entre arquivos, o primeiro da lista vence. A ausência de fallback em teste evita que uma variável esquecida em `.env.test` seja herdada do `.env` e faça os testes atingirem o banco de desenvolvimento.
 
-Regras de implementação (fundação técnica, `@nestjs/config`):
+Implementação (`planner-api/src/config/`):
 
-* `ConfigModule.forRoot` global, com `envFilePath` derivado de `APP_ENV` e `ignoreEnvFile` em `staging`/`production`.
-* Validação no boot (schema zod ou Joi): enum de `APP_ENV`, tipos numéricos (`PORT`, `DB_PORT`), obrigatoriedade das credenciais. Configuração inválida impede a aplicação de subir.
-* Configuração tipada (`registerAs` ou serviço de config); nenhum outro ponto do código lê `process.env`. A URL do banco é montada aqui.
+* [`env.ts`](../planner-api/src/config/env.ts): schema **zod** (enum de `APP_ENV`, `PORT`/`DB_PORT` numéricos, credenciais obrigatórias), `envFilePaths(appEnv)` e defaults das flags por `APP_ENV`. Configuração inválida impede a aplicação de subir.
+* [`app-config.module.ts`](../planner-api/src/config/app-config.module.ts): `ConfigModule.forRoot` global, com `envFilePath` derivado de `APP_ENV` e `ignoreEnvFile` em `staging`/`production`. É o único ponto da aplicação que lê `process.env`; o restante injeta `ConfigService<Env, true>`.
+* [`database-url.ts`](../planner-api/src/config/database-url.ts): único ponto que monta a URL do banco, com usuário e senha URL-encoded.
 * Comportamento por ambiente via **flags explícitas** (`LOG_LEVEL`, `SWAGGER_ENABLED`, `CORS_ORIGINS`, …) com defaults por `APP_ENV`, em vez de condicionais `if (APP_ENV === 'staging')` espalhadas.
+
+| Flag              | development | test | staging | production |
+| ----------------- | ----------- | ---- | ------- | ---------- |
+| `SWAGGER_ENABLED` | `true`      | `true` | `true` | `false`    |
+
 * Imagem de produção (multi-stage, `NODE_ENV=production`, `start:prod`) entra junto com o deploy; o `Dockerfile` atual é apenas de desenvolvimento.
 
 ---
