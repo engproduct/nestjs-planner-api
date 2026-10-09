@@ -153,7 +153,7 @@ erDiagram
         string email
         date birthDate
         enum gender
-        decimal height
+        int height
         decimal weight
         datetime createdAt
         datetime updatedAt
