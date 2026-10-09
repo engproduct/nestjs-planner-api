@@ -44,6 +44,9 @@ lerna-debug.log*
 !.env.example
 !.env.test.example
 
+# Prisma Client (gerado por `prisma generate` no postinstall)
+/src/generated
+
 # temp directory
 .temp
 .tmp

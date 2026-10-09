@@ -1,0 +1,13 @@
+// A URL de conexão não fica aqui: é montada em prisma.config.ts a partir das
+// variáveis DB_*.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
