@@ -68,7 +68,7 @@ Issues e branches (ex.: `feat/initial-harness-setup-1`, Setup Harness Inicial #1
 | Linguagem      | TypeScript            | ESM (`"type": "module"`)                                                   |
 | Framework HTTP | NestJS 12             | Módulos, injeção de dependência, pipes de validação                        |
 | Persistência   | PostgreSQL 16         | Dev: porta 5432; teste: 5433 ([docker-compose.yml](../docker-compose.yml)) |
-| Acesso a dados | **Prisma**            | Schema em `schema.prisma`; migrations versionadas                          |
+| Acesso a dados | **Prisma 7**          | Generator `prisma-client` (ESM) + driver adapter `@prisma/adapter-pg`; schema em `planner-api/prisma/schema.prisma`, migrations em `prisma/migrations`; client gerado em `src/generated/prisma` no `postinstall` (não versionado) |
 | Configuração   | `@nestjs/config` + zod | Validação e tipagem das variáveis no boot ([Configuração por ambiente](#configuração-por-ambiente)) |
 | API            | REST JSON             | OpenAPI/Swagger (NFR do PRD)                                               |
 | Testes         | Vitest + Supertest    | Unit + e2e (`vitest.config.e2e.ts`)                                        |
@@ -123,7 +123,7 @@ Estrutura física alvo em `planner-api/src/` (evolutiva):
 * `appointments/` — agendamentos e agenda
 * `observations/` — observações clínicas
 * `auth/` — autenticação/autorização JWT, quando implementada
-* `prisma/` — schema e migrations (ou na raiz de `planner-api` conforme `prisma init`)
+* `prisma/` — `PrismaModule` global e `PrismaService` (schema e migrations ficam em `planner-api/prisma/`)
 * `config/` — carregamento, validação e tipagem das variáveis de ambiente; montagem da URL do banco
 
 ---
@@ -245,7 +245,7 @@ Implementação (`planner-api/src/config/`):
 
 * [`env.ts`](../planner-api/src/config/env.ts): schema **zod** (enum de `APP_ENV`, `PORT`/`DB_PORT` numéricos, credenciais obrigatórias), `envFilePaths(appEnv)` e defaults das flags por `APP_ENV`. Configuração inválida impede a aplicação de subir.
 * [`app-config.module.ts`](../planner-api/src/config/app-config.module.ts): `ConfigModule.forRoot` global, com `envFilePath` derivado de `APP_ENV` e `ignoreEnvFile` em `staging`/`production`. É o único ponto da aplicação que lê `process.env`; o restante injeta `ConfigService<Env, true>`.
-* [`database-url.ts`](../planner-api/src/config/database-url.ts): único ponto que monta a URL do banco, com usuário e senha URL-encoded.
+* [`database-url.ts`](../planner-api/src/config/database-url.ts): único ponto que monta a URL do banco, com usuário e senha URL-encoded. Usado pelo `PrismaService` e pelo [`prisma.config.ts`](../planner-api/prisma.config.ts), que aplica as mesmas regras de arquivo e validação ao CLI (só `prisma generate` tolera configuração ausente).
 * Comportamento por ambiente via **flags explícitas** (`LOG_LEVEL`, `SWAGGER_ENABLED`, `CORS_ORIGINS`, …) com defaults por `APP_ENV`, em vez de condicionais `if (APP_ENV === 'staging')` espalhadas.
 
 | Flag              | development | test | staging | production |

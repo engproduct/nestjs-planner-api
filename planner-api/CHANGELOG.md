@@ -4,6 +4,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.3.0] - 2026-10-09
+
+Fundação técnica 3/5 (#10, parte de #5).
+
+### Adicionado
+
+- Prisma 7 (`@prisma/client` e `@prisma/adapter-pg`): `prisma.config.ts` reutilizando a URL do banco, `prisma/schema.prisma`, `PrismaModule` global e `PrismaService`.
+- Script `postinstall` (`prisma generate`); client gerado em `src/generated/prisma`, ignorado no git, no lint e no Prettier.
+
+### Alterado
+
+- `Dockerfile` instala as dependências sem scripts e gera o Prisma Client depois de copiar o schema.
+- `version` do `package.json` para 0.3.0.
+
 ## [0.2.0] - 2026-10-09
 
 Fundação técnica 2/5 (#9, parte de #5).
@@ -36,6 +50,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.3.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.0.0...v0.1.0
 [0.0.0]: https://github.com/engproduct/nestjs-planner-api/releases/tag/v0.0.0
