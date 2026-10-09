@@ -58,6 +58,10 @@ flowchart LR
 
 5. **Documentação:** se a decisão afeta domínio ou stack, atualizar `docs/` no mesmo PR.
 
+6. **Release:** cada PR registra a mudança em [`planner-api/CHANGELOG.md`](../planner-api/CHANGELOG.md) e incrementa o `version` do `package.json`.
+
+Versionamento: SemVer `0.x` enquanto a API não for estável, com **1 PR = 1 minor** (PRs pequenos, no máximo ~500 linhas, mantêm o histórico legível). O workflow [`pr-template.yml`](../.github/workflows/pr-template.yml) reprova PRs que não alterem o CHANGELOG e o `version`, e [`release-tag.yml`](../.github/workflows/release-tag.yml) cria a tag anotada `v<version>` no merge commit na `main`, o que mantém tag, `version` e CHANGELOG alinhados sem passo manual.
+
 Issues e branches (ex.: `feat/initial-harness-setup-1`, Setup Harness Inicial #1) amarram entregáveis a critérios de aceite rastreáveis.
 
 ---
@@ -75,6 +79,7 @@ Issues e branches (ex.: `feat/initial-harness-setup-1`, Setup Harness Inicial #1
 | API            | REST JSON             | OpenAPI/Swagger (NFR do PRD)                                               |
 | Testes         | Vitest + Supertest    | Unit + e2e (`vitest.config.e2e.ts`)                                        |
 | Qualidade      | oxlint + Prettier     | Scripts em `planner-api/package.json`                                      |
+| CI             | GitHub Actions        | [`ci.yml`](../.github/workflows/ci.yml): lint + unit + e2e com Postgres como service |
 
 O case original permite PHP ou MySQL; **esta implementação** fixa Node/TypeScript/Nest/PostgreSQL/Prisma.
 
@@ -270,7 +275,7 @@ Swagger UI em `/docs` e documento OpenAPI em `/docs-json` quando habilitado.
 
 * **LGPD:** fluxo de anonimização/exclusão de PII do paciente documentado no domínio; implementação em caso de uso dedicado.
 
-* **CI/CD, cloud, pipeline:** desejáveis no PRD; GitHub Actions e deploy ficam fora do harness inicial, salvo issue específica.
+* **CI/CD, cloud, pipeline:** CI em GitHub Actions ([`ci.yml`](../.github/workflows/ci.yml)) roda lint, unit e e2e em todo PR e push na `main`. Deploy e cloud ficam para issue específica.
 
 ---
 

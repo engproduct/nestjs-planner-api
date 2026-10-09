@@ -8,6 +8,7 @@ Backend de prontuário eletrônico (NestJS 12, TypeScript ESM, PostgreSQL 16, Pr
 2. [docs/domain.md](docs/domain.md) — agregados, regras (R1–R10) e invariantes (I1–I7)
 3. [docs/architecture.md](docs/architecture.md) — stack, camadas, modelo ER, fluxo de engenharia
 4. [docs/glossary.md](docs/glossary.md) — linguagem ubíqua (use os nomes em inglês no código: `Patient`, `User`, `Appointment`, `Observation`)
+5. [planner-api/CHANGELOG.md](planner-api/CHANGELOG.md) — histórico de versões (SemVer `0.x`)
 
 Se uma tarefa conflitar com esses documentos, **pare e pergunte** em vez de inventar regra. Decisões que mudam domínio ou stack exigem atualizar `docs/` no mesmo PR.
 
@@ -48,7 +49,7 @@ yarn format      # prettier
 yarn start:dev   # API em watch (porta 3000)
 ```
 
-**Definition of Done:** `yarn lint`, `yarn test` e `yarn test:e2e` passando. Não declare uma tarefa concluída sem rodá-los e relatar o resultado real.
+**Definition of Done:** `yarn lint`, `yarn test` e `yarn test:e2e` passando, e CHANGELOG e `version` atualizados. Não declare uma tarefa concluída sem rodá-los e relatar o resultado real.
 
 ## Fluxo de trabalho (harness)
 
@@ -60,6 +61,7 @@ Cada entrega é uma **fatia vertical** (ordem em [domain.md](docs/domain.md#mape
 4. **Refactor** — com testes verdes.
 5. **Verify** — lint + unit + e2e.
 6. **Docs** — atualizar `docs/` se a decisão afetar domínio/stack.
+7. **Release** — todo PR acrescenta uma entrada no topo de `planner-api/CHANGELOG.md` (Keep a Changelog, pt-BR) e faz o bump de `version` em `planner-api/package.json` (1 PR = 1 minor, SemVer `0.x`); mantenha também o `setVersion` do Swagger em `src/app.setup.ts` igual à versão. A tag `v<version>` é criada automaticamente no merge na `main` (`.github/workflows/release-tag.yml`); nunca crie a tag na branch da feature.
 
 Branches: `feat/<descricao>-<issue>`, `fix/...`, `chore/...`, `docs/...`. Commits no padrão Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`). Nunca commitar direto na `main`.
 
@@ -85,4 +87,10 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 
 ## Estado atual
 
-Scaffold Nest + documentação. Ainda **não instalados**: Prisma, `@nestjs/config`, `ValidationPipe`/class-validator, Swagger, infraestrutura de banco nos testes e2e e CI. Essa fundação é a próxima fatia; não assuma que existem.
+Fundação técnica pronta; nenhuma fatia de domínio implementada ainda (próxima: Patient, R1/R2).
+
+- Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
+- Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.
+- `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`) e Swagger (`/docs`) em `src/app.setup.ts`, usado por `main.ts` e pelos e2e.
+- E2E: use `createTestApp()` e `resetDatabase(app)` de `planner-api/test/utils/`.
+- CI: `.github/workflows/ci.yml` roda lint + unit + e2e em todo PR.
