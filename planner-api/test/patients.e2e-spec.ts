@@ -213,4 +213,114 @@ describe('Patients (e2e)', () => {
       return api(app).get(`/patients?${query}`).expect(400);
     });
   });
+
+  describe('PATCH /patients/:uuid', () => {
+    const createOne = async (email = validPatient.email) => {
+      const { body } = await api(app)
+        .post('/patients')
+        .send({ ...validPatient, email })
+        .expect(201);
+      return body as { uuid: string };
+    };
+
+    it('R2: updates partially and persists', async () => {
+      const { uuid } = await createOne();
+
+      const { body } = await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ name: 'Maria Souza', weight: 64 })
+        .expect(200);
+      expect(body).toMatchObject({ uuid, name: 'Maria Souza', weight: 64 });
+
+      const { body: fetched } = await api(app)
+        .get(`/patients/${uuid}`)
+        .expect(200);
+      expect(fetched).toMatchObject({
+        name: 'Maria Souza',
+        weight: 64,
+        height: 165,
+        email: 'maria@example.com',
+      });
+    });
+
+    it('R2: normalizes an updated email', async () => {
+      const { uuid } = await createOne();
+      const { body } = await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ email: ' NEW@Example.com ' })
+        .expect(200);
+      expect(body.email).toBe('new@example.com');
+    });
+
+    it('R2: accepts re-sending the own email', async () => {
+      const { uuid } = await createOne();
+      await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ email: validPatient.email })
+        .expect(200);
+    });
+
+    it.each([
+      ['email', 'not-an-email'],
+      ['height', 10],
+      ['gender', 'UNKNOWN'],
+      ['birthDate', '2999-01-01'],
+    ])('R2: rejects invalid %s=%j with 400', async (field, value) => {
+      const { uuid } = await createOne();
+      await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ [field]: value })
+        .expect(400);
+    });
+
+    it('R2: rejects a future birthDate without changing the patient', async () => {
+      const { uuid } = await createOne();
+      await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ birthDate: '2999-01-01' })
+        .expect(400);
+      const { body } = await api(app).get(`/patients/${uuid}`).expect(200);
+      expect(body.birthDate).toBe(validPatient.birthDate);
+    });
+
+    it.each([
+      ['uuid', '6f1c1f0e-9d6b-4c52-8f7e-2d5f3a1b9c10'],
+      ['id', 99],
+    ])('R2: does not allow changing %s (400)', async (field, value) => {
+      const { uuid } = await createOne();
+      await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ [field]: value })
+        .expect(400);
+    });
+
+    it('R2: returns 404 for an unknown uuid', () => {
+      return api(app)
+        .patch('/patients/6f1c1f0e-9d6b-4c52-8f7e-2d5f3a1b9c10')
+        .send({ name: 'X' })
+        .expect(404);
+    });
+
+    it('R2: returns 404 for a deleted patient', async () => {
+      const { uuid } = await createOne();
+      await app.get(PrismaService).patient.update({
+        where: { uuid },
+        data: { deletedAt: new Date() },
+      });
+      await api(app).patch(`/patients/${uuid}`).send({ name: 'X' }).expect(404);
+    });
+
+    it('R2: returns 400 for an invalid uuid', () => {
+      return api(app).patch('/patients/not-a-uuid').send({}).expect(400);
+    });
+
+    it('R1: returns 409 when the email belongs to another active patient', async () => {
+      await createOne('a@example.com');
+      const { uuid } = await createOne('b@example.com');
+      await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ email: 'A@example.com' })
+        .expect(409);
+    });
+  });
 });
