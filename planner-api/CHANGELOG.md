@@ -4,6 +4,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.4.0] - 2026-10-09
+
+Fundação técnica 4/5 (#11, parte de #5).
+
+### Adicionado
+
+- `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`) e Swagger em `/docs` (controlado por `SWAGGER_ENABLED`) em `src/app.setup.ts`, compartilhado entre `main.ts` e os e2e.
+- `GET /health` com `SELECT 1` no banco (503 se indisponível).
+- Infraestrutura e2e com banco: `prisma migrate deploy` no global setup, `createTestApp()` e `resetDatabase(app)`, arquivos em série.
+
+### Removido
+
+- `AppController`/`AppService` "Hello World" e seus testes.
+
 ## [0.3.0] - 2026-10-09
 
 Fundação técnica 3/5 (#10, parte de #5).
