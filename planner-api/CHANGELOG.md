@@ -12,6 +12,7 @@ Fundação técnica 5/5 (#12, parte de #5).
 
 - CI (`.github/workflows/ci.yml`): lint, unit e e2e com Postgres como service, em todo PR e push na `main`.
 - Regra de release: passo "Release" e DoD no `CLAUDE.md`, racional no `docs/architecture.md`, job em `pr-template.yml` que exige CHANGELOG e `version` alterados e workflow `release-tag.yml` que cria a tag `v<version>` no merge na `main`.
+- Links de diff entre versões no rodapé do CHANGELOG (`compare/vA...vB`), exigidos pelo job de release do `pr-template.yml`.
 
 ### Alterado
 

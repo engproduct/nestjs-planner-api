@@ -61,7 +61,7 @@ Cada entrega é uma **fatia vertical** (ordem em [domain.md](docs/domain.md#mape
 4. **Refactor** — com testes verdes.
 5. **Verify** — lint + unit + e2e.
 6. **Docs** — atualizar `docs/` se a decisão afetar domínio/stack.
-7. **Release** — todo PR acrescenta uma entrada no topo de `planner-api/CHANGELOG.md` (Keep a Changelog, pt-BR) e faz o bump de `version` em `planner-api/package.json` (1 PR = 1 minor, SemVer `0.x`); mantenha também o `setVersion` do Swagger em `src/app.setup.ts` igual à versão. A tag `v<version>` é criada automaticamente no merge na `main` (`.github/workflows/release-tag.yml`); nunca crie a tag na branch da feature.
+7. **Release** — todo PR acrescenta uma entrada no topo de `planner-api/CHANGELOG.md` (Keep a Changelog, pt-BR) e faz o bump de `version` em `planner-api/package.json` (1 PR = 1 minor, SemVer `0.x`); mantenha também o `setVersion` do Swagger em `src/app.setup.ts` igual à versão. No rodapé do CHANGELOG, acrescente no topo da lista o link de diff da versão: `[X.Y.0]: https://github.com/engproduct/nestjs-planner-api/compare/vX.(Y-1).0...vX.Y.0`. A tag `v<version>` é criada automaticamente no merge na `main` (`.github/workflows/release-tag.yml`); nunca crie a tag na branch da feature.
 
 Branches: `feat/<descricao>-<issue>`, `fix/...`, `chore/...`, `docs/...`. Commits no padrão Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`). Nunca commitar direto na `main`.
 

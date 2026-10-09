@@ -58,9 +58,9 @@ flowchart LR
 
 5. **Documentação:** se a decisão afeta domínio ou stack, atualizar `docs/` no mesmo PR.
 
-6. **Release:** cada PR registra a mudança em [`planner-api/CHANGELOG.md`](../planner-api/CHANGELOG.md) e incrementa o `version` do `package.json`.
+6. **Release:** cada PR registra a mudança em [`planner-api/CHANGELOG.md`](../planner-api/CHANGELOG.md) e incrementa o `version` do `package.json`. Cada versão do CHANGELOG aponta para o diff `compare/v<anterior>...v<versão>` no GitHub, para que humanos e agentes vejam exatamente o que entrou em cada release.
 
-Versionamento: SemVer `0.x` enquanto a API não for estável, com **1 PR = 1 minor** (PRs pequenos, no máximo ~500 linhas, mantêm o histórico legível). O workflow [`pr-template.yml`](../.github/workflows/pr-template.yml) reprova PRs que não alterem o CHANGELOG e o `version`, e [`release-tag.yml`](../.github/workflows/release-tag.yml) cria a tag anotada `v<version>` no merge commit na `main`, o que mantém tag, `version` e CHANGELOG alinhados sem passo manual.
+Versionamento: SemVer `0.x` enquanto a API não for estável, com **1 PR = 1 minor** (PRs pequenos, no máximo ~500 linhas, mantêm o histórico legível). O workflow [`pr-template.yml`](../.github/workflows/pr-template.yml) reprova PRs que não alterem o CHANGELOG e o `version` (ou sem o link de diff da nova versão), e [`release-tag.yml`](../.github/workflows/release-tag.yml) cria a tag anotada `v<version>` no merge commit na `main`, o que mantém tag, `version` e CHANGELOG alinhados sem passo manual.
 
 Issues e branches (ex.: `feat/initial-harness-setup-1`, Setup Harness Inicial #1) amarram entregáveis a critérios de aceite rastreáveis.
 

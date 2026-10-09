@@ -91,6 +91,21 @@ jobs:
               errors.push(`Incremente "version" em planner-api/package.json (continua ${head}).`);
             }
 
+            const { data: changelog } = await github.rest.repos.getContent({
+              owner,
+              repo,
+              path: 'planner-api/CHANGELOG.md',
+              ref: pr.head.sha,
+            });
+            const text = Buffer.from(changelog.content, 'base64').toString();
+            const esc = head.replace(/\./g, '\\.');
+            if (!new RegExp(`^## \\[${esc}\\]`, 'm').test(text)) {
+              errors.push(`Adicione a seção "## [${head}]" no CHANGELOG.`);
+            }
+            if (!new RegExp(`^\\[${esc}\\]: https://github\\.com/${owner}/${repo}/compare/v\\S+\\.\\.\\.v${esc}$`, 'm').test(text)) {
+              errors.push(`Adicione o link "[${head}]: https://github.com/${owner}/${repo}/compare/v<anterior>...v${head}" no rodapé do CHANGELOG.`);
+            }
+
             if (errors.length > 0) {
               core.setFailed('Release incompleto (ver CLAUDE.md, passo "Release"):\n- ' + errors.join('\n- '));
             }
