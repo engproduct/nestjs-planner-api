@@ -1,7 +1,17 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
@@ -16,7 +26,18 @@ export class PatientsController {
   @Post()
   @ApiCreatedResponse({ type: PatientResponseDto })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @ApiConflictResponse({ description: 'Email já cadastrado' })
   create(@Body() dto: CreatePatientDto): Promise<PatientResponseDto> {
     return this.patientsService.create(dto);
+  }
+
+  @Get(':uuid')
+  @ApiOkResponse({ type: PatientResponseDto })
+  @ApiBadRequestResponse({ description: 'uuid inválido' })
+  @ApiNotFoundResponse({ description: 'Paciente inexistente ou excluído' })
+  findOne(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<PatientResponseDto> {
+    return this.patientsService.findOne(uuid);
   }
 }

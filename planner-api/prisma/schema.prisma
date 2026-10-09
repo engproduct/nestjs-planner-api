@@ -33,5 +33,7 @@ model Patient {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  // O índice único parcial de email (WHERE "deletedAt" IS NULL) vive só na
+  // migration patient_email_active_unique: o Prisma 7.10 não o modela no schema.
   @@map("patients")
 }
