@@ -87,7 +87,7 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 
 ## Estado atual
 
-Fundação técnica pronta; nenhuma fatia de domínio implementada ainda (próxima: Patient, R1/R2).
+Fundação técnica pronta. Patient pronta (R1, R2); próxima: Appointment (#24).
 
 - Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
 - Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.
