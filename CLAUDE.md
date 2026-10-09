@@ -82,15 +82,16 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 - `User` com `role = DOCTOR` representa o médico — não criar entidade `Doctor`.
 - `Observation` referencia apenas `appointmentId` (nunca `patientId`/`userId` diretamente).
 - Senhas só como `passwordHash`.
-- Códigos HTTP: 201 criação, 400 validação, 404 referência inexistente, 409 conflito de agenda (R9).
+- Códigos HTTP: 201 criação, 400 validação, 404 referência inexistente, 409 conflito (agenda, R9; email de paciente duplicado).
 - Testes ficam ao lado do código (`*.spec.ts`); e2e em `planner-api/test/` (`*.e2e-spec.ts`). Use o banco de teste (`:5433`), nunca o de dev.
 
 ## Estado atual
 
-Fundação técnica pronta; nenhuma fatia de domínio implementada ainda (próxima: Patient, R1/R2).
+Fundação técnica pronta. Patient pronta (R1, R2); próxima: Appointment (#24).
 
 - Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
 - Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.
+- Índice único parcial de `patients.email` (`WHERE "deletedAt" IS NULL`) existe só em SQL manual na migration `patient_email_active_unique` (Prisma 7.10 não o modela no schema): migrations futuras geradas pelo Prisma podem tentar `DROP` desse índice e devem ser revisadas.
 - `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`) e Swagger (`/docs`) em `src/app.setup.ts`, usado por `main.ts` e pelos e2e.
 - E2E: use `createTestApp()` e `resetDatabase(app)` de `planner-api/test/utils/`.
 - CI: `.github/workflows/ci.yml` roda lint + unit + e2e em todo PR.

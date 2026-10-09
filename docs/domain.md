@@ -41,6 +41,13 @@ Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na 
 | --------------------------------- | ----------------------------------------------------------------- |
 | name, phone, email                | Obrigatórios no cadastro (PRD); formatos validados na borda (DTO) |
 | birthDate, gender, height, weight | Obrigatórios no cadastro (PRD)                                    |
+| name                              | Normalizado (trim); vazio após o trim → 400                       |
+| phone                             | Formato E.164                                                     |
+| email                             | Normalizado (trim + minúsculas); único entre pacientes ativos; duplicata → 409 |
+| birthDate                         | `YYYY-MM-DD`; não pode ser futura                                 |
+| gender                            | `MALE`, `FEMALE`, `OTHER` ou `NOT_INFORMED`                       |
+| height                            | Inteiro em cm, de 30 a 300                                        |
+| weight                            | Decimal(5,2) em kg, de 0.5 a 700; exposto na API como `number`    |
 | deletedAt                         | Soft delete; listagens padrão ignoram excluídos                   |
 
 **Comportamentos (casos de uso):**
@@ -48,6 +55,11 @@ Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na 
 * Cadastrar paciente
 * Listar pacientes ativos
 * Editar perfil
+* Consultar paciente por `uuid` (`GET /patients/:uuid`)
+
+A listagem é paginada com `?page&limit` (default 20, máximo 100) e responde `{ data, meta: { page, limit, total } }`.
+
+A edição (`PATCH /patients/:uuid`) é parcial: campos omitidos não mudam; `null` em qualquer campo → 400 (todos são obrigatórios).
 
 **Consistência:**
 
