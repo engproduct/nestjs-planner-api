@@ -26,6 +26,8 @@ Descreve **como** este backend é construído: stack, camadas, persistência, te
 
 * **Pirâmide neste repo:** testes **e2e** (Vitest + Supertest + Postgres de teste) para fluxos REST; testes **unitários** para regras de domínio puras (ex.: sobreposição de horários) quando extraídas do serviço.
 
+* **Infraestrutura e2e:** [`test/global-setup.ts`](../planner-api/test/global-setup.ts) aplica as migrations (`prisma migrate deploy`) no banco de teste antes da suíte; [`createTestApp()`](../planner-api/test/utils/create-test-app.ts) sobe o `AppModule` com a mesma configuração global de `main.ts` ([`app.setup.ts`](../planner-api/src/app.setup.ts): `ValidationPipe` e Swagger); [`resetDatabase(app)`](../planner-api/test/utils/database.ts) trunca as tabelas e recusa rodar fora de `APP_ENV=test`. Os arquivos e2e rodam em série (`fileParallelism: false`) porque compartilham o banco.
+
 * **Definition of Done técnica:** `yarn lint`, `yarn test` e `yarn test:e2e` em [`planner-api/`](../planner-api/) passando para a fatia entregue.
 
 ### Programação agêntica (harness)
@@ -125,6 +127,7 @@ Estrutura física alvo em `planner-api/src/` (evolutiva):
 * `auth/` — autenticação/autorização JWT, quando implementada
 * `prisma/` — `PrismaModule` global e `PrismaService` (schema e migrations ficam em `planner-api/prisma/`)
 * `config/` — carregamento, validação e tipagem das variáveis de ambiente; montagem da URL do banco
+* `health/` — `GET /health` (ping no banco), usado como healthcheck
 
 ---
 
@@ -252,6 +255,7 @@ Implementação (`planner-api/src/config/`):
 | ----------------- | ----------- | ---- | ------- | ---------- |
 | `SWAGGER_ENABLED` | `true`      | `true` | `true` | `false`    |
 
+Swagger UI em `/docs` e documento OpenAPI em `/docs-json` quando habilitado.
 * Imagem de produção (multi-stage, `NODE_ENV=production`, `start:prod`) entra junto com o deploy; o `Dockerfile` atual é apenas de desenvolvimento.
 
 ---
