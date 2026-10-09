@@ -64,6 +64,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.4.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.0.0...v0.1.0
