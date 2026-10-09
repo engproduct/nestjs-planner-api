@@ -4,6 +4,19 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.8.0] - 2026-10-09
+
+Patient 3/4: listagem paginada (#22, parte de #6).
+
+### Adicionado
+
+- `GET /patients` paginado (`?page&limit`, default 20, máximo 100) que lista só pacientes ativos e responde `{ data, meta: { page, limit, total } }`.
+- `src/common/pagination/`: `PaginationQueryDto`, `paginated()` e `ApiPaginatedResponse`, reutilizáveis no Appointment.
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.8.0.
+
 ## [0.7.0] - 2026-10-09
 
 Patient 2/4: email único e consulta por uuid (#21, parte de #6).
@@ -109,6 +122,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.8.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.4.0...v0.5.0
