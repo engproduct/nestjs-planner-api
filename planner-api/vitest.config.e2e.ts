@@ -7,6 +7,5 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
-    env: { APP_ENV: 'test' },
   },
 });
