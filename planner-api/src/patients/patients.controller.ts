@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -14,6 +15,9 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/pagination/api-paginated-response.decorator.js';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
+import { Paginated } from '../common/pagination/paginated.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
 import { PatientResponseDto } from './dto/patient-response.dto.js';
 import { PatientsService } from './patients.service.js';
@@ -29,6 +33,15 @@ export class PatientsController {
   @ApiConflictResponse({ description: 'Email já cadastrado' })
   create(@Body() dto: CreatePatientDto): Promise<PatientResponseDto> {
     return this.patientsService.create(dto);
+  }
+
+  @Get()
+  @ApiPaginatedResponse(PatientResponseDto)
+  @ApiBadRequestResponse({ description: 'page ou limit inválidos' })
+  list(
+    @Query() query: PaginationQueryDto,
+  ): Promise<Paginated<PatientResponseDto>> {
+    return this.patientsService.list(query);
   }
 
   @Get(':uuid')
