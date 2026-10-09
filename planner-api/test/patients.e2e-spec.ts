@@ -76,6 +76,7 @@ describe('Patients (e2e)', () => {
       ['weight', 0.4],
       ['weight', 700.5],
       ['weight', 62.555],
+      ['name', '   '],
     ])('R1: rejects invalid %s=%j with 400', (field, value) => {
       return api(app)
         .post('/patients')
@@ -265,12 +266,33 @@ describe('Patients (e2e)', () => {
       ['height', 10],
       ['gender', 'UNKNOWN'],
       ['birthDate', '2999-01-01'],
+      ['name', '   '],
     ])('R2: rejects invalid %s=%j with 400', async (field, value) => {
       const { uuid } = await createOne();
       await api(app)
         .patch(`/patients/${uuid}`)
         .send({ [field]: value })
         .expect(400);
+    });
+
+    it.each(Object.keys(validPatient))(
+      'R2: rejects a null %s with 400',
+      async (field) => {
+        const { uuid } = await createOne();
+        await api(app)
+          .patch(`/patients/${uuid}`)
+          .send({ [field]: null })
+          .expect(400);
+      },
+    );
+
+    it('R2: trims the name', async () => {
+      const { uuid } = await createOne();
+      const { body } = await api(app)
+        .patch(`/patients/${uuid}`)
+        .send({ name: '  Ana Souza  ' })
+        .expect(200);
+      expect(body.name).toBe('Ana Souza');
     });
 
     it('R2: rejects a future birthDate without changing the patient', async () => {
