@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { PrismaService } from '../src/prisma/prisma.service.js';
 import { App } from 'supertest/types.js';
 import { createTestApp } from './utils/create-test-app.js';
 import { resetDatabase } from './utils/database.js';
@@ -87,6 +88,66 @@ describe('Patients (e2e)', () => {
         .post('/patients')
         .send({ ...validPatient, id: 1 })
         .expect(400);
+    });
+  });
+
+  describe('R1: email unique among active patients', () => {
+    it('rejects a duplicate email (normalized) with 409', async () => {
+      await api(app).post('/patients').send(validPatient).expect(201);
+      await api(app)
+        .post('/patients')
+        .send({ ...validPatient, email: '  MARIA@Example.com ' })
+        .expect(409);
+    });
+
+    it('allows reusing the email of a deleted patient', async () => {
+      const { body } = await api(app)
+        .post('/patients')
+        .send(validPatient)
+        .expect(201);
+      await app.get(PrismaService).patient.update({
+        where: { uuid: body.uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).post('/patients').send(validPatient).expect(201);
+    });
+  });
+
+  describe('GET /patients/:uuid', () => {
+    it('R2: returns 200 for an existing patient', async () => {
+      const { body: created } = await api(app)
+        .post('/patients')
+        .send(validPatient)
+        .expect(201);
+
+      const { body } = await api(app)
+        .get(`/patients/${created.uuid}`)
+        .expect(200);
+      expect(body).toEqual(created);
+    });
+
+    it('R2: returns 404 for an unknown uuid', () => {
+      return api(app)
+        .get('/patients/6f1c1f0e-9d6b-4c52-8f7e-2d5f3a1b9c10')
+        .expect(404);
+    });
+
+    it('R2: returns 404 for a deleted patient', async () => {
+      const { body } = await api(app)
+        .post('/patients')
+        .send(validPatient)
+        .expect(201);
+      await app.get(PrismaService).patient.update({
+        where: { uuid: body.uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).get(`/patients/${body.uuid}`).expect(404);
+    });
+
+    it('R2: returns 400 for an invalid uuid', () => {
+      return api(app).get('/patients/not-a-uuid').expect(400);
     });
   });
 });
