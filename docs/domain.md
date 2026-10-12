@@ -62,6 +62,8 @@ A listagem é paginada com `?page&limit` (default 20, máximo 100) e responde `{
 
 A edição (`PATCH /patients/:uuid`) é parcial: campos omitidos não mudam; `null` em qualquer campo → 400 (todos são obrigatórios).
 
+Violação de regra de domínio lança `DomainError` (sem dependência de HTTP); o `DomainErrorFilter` global a traduz para 400 no mesmo formato do `ValidationPipe`, com `message` sempre array.
+
 **Consistência:**
 
 Alterações de perfil não alteram agendamentos passados; a identidade do paciente (`uuid`) permanece estável.

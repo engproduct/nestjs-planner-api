@@ -1,4 +1,9 @@
-import { isBirthDateInFuture, normalizeEmail } from './patient.rules.js';
+import { DomainError } from '../common/domain/domain-error.js';
+import {
+  assertBirthDateNotInFuture,
+  isBirthDateInFuture,
+  normalizeEmail,
+} from './patient.rules.js';
 
 describe('patient rules', () => {
   const today = new Date('2026-10-09T12:00:00Z');
@@ -14,6 +19,23 @@ describe('patient rules', () => {
 
     it('is true for a later date', () => {
       expect(isBirthDateInFuture('2026-10-10', today)).toBe(true);
+    });
+  });
+
+  describe('assertBirthDateNotInFuture', () => {
+    it('does not throw for a past date or today', () => {
+      expect(() =>
+        assertBirthDateNotInFuture('1990-05-20', today),
+      ).not.toThrow();
+      expect(() =>
+        assertBirthDateNotInFuture('2026-10-09', today),
+      ).not.toThrow();
+    });
+
+    it('throws a DomainError for a later date', () => {
+      expect(() => assertBirthDateNotInFuture('2026-10-10', today)).toThrow(
+        DomainError,
+      );
     });
   });
 
