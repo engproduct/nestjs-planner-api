@@ -259,6 +259,10 @@ Quando R10 for implementada:
 
 2. **Campos PII** (`name`, `phone`, `email`, `birthDate`, etc.) anonimizados ou substituídos por placeholders irreversíveis.
 
+   * `email`: substituído por `anon-<uuid>@anonymized.invalid`, com `<uuid>` igual ao `uuid` do paciente. O valor é determinístico (mantém a operação idempotente) e único, compatível com o índice único parcial de `patients.email`.
+   * O TLD `.invalid` é reservado pela [RFC 2606](https://www.rfc-editor.org/rfc/rfc2606) (detalhado na [RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)) e nunca resolve na internet: o valor não colide com um email real nem recebe mensagens.
+   * É uma escolha técnica, não uma exigência da LGPD, que não prescreve formato de placeholder.
+
 3. **Agendamentos** permanecem com horários e demais dados necessários para retenção histórica.
 
 4. **Observações clínicas** permanecem sujeitas à política específica de retenção e anonimização definida para o prontuário.
