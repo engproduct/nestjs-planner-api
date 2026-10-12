@@ -48,6 +48,7 @@ Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na 
 | gender                            | `MALE`, `FEMALE`, `OTHER` ou `NOT_INFORMED`                       |
 | height                            | Inteiro em cm, de 30 a 300                                        |
 | weight                            | Decimal(5,2) em kg, de 0.5 a 700; exposto na API como `number`    |
+| uuid                              | Identidade gerada pela aplicação (UUID v4) na criação; sem default no banco; imutável |
 | deletedAt                         | Soft delete; listagens padrão ignoram excluídos                   |
 
 **Comportamentos (casos de uso):**

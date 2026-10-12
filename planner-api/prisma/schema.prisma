@@ -21,7 +21,7 @@ enum Gender {
 
 model Patient {
   id        Int       @id @default(autoincrement())
-  uuid      String    @unique @default(uuid()) @db.Uuid
+  uuid      String    @unique @db.Uuid // gerado pela aplicação (sem default no banco)
   name      String
   phone     String
   email     String

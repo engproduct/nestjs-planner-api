@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -25,6 +26,7 @@ export class PatientsService {
     try {
       const patient = await this.prisma.patient.create({
         data: {
+          uuid: randomUUID(),
           name: dto.name,
           phone: dto.phone,
           email: dto.email,
