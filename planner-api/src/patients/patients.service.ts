@@ -4,6 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
+import { Paginated, paginated } from '../common/pagination/paginated.js';
 import { isUniqueViolation } from '../prisma/prisma-errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
@@ -48,5 +50,21 @@ export class PatientsService {
       throw new NotFoundException('Patient not found');
     }
     return toPatientResponse(patient);
+  }
+
+  async list(
+    query: PaginationQueryDto,
+  ): Promise<Paginated<PatientResponseDto>> {
+    const where = { deletedAt: null };
+    const [patients, total] = await this.prisma.$transaction([
+      this.prisma.patient.findMany({
+        where,
+        orderBy: { id: 'asc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.patient.count({ where }),
+    ]);
+    return paginated(patients.map(toPatientResponse), total, query);
   }
 }
