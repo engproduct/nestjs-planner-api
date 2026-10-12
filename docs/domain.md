@@ -41,6 +41,12 @@ Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na 
 | --------------------------------- | ----------------------------------------------------------------- |
 | name, phone, email                | Obrigatórios no cadastro (PRD); formatos validados na borda (DTO) |
 | birthDate, gender, height, weight | Obrigatórios no cadastro (PRD)                                    |
+| phone                             | Formato E.164                                                     |
+| email                             | Normalizado (trim + minúsculas); único entre pacientes ativos; duplicata → 409 |
+| birthDate                         | `YYYY-MM-DD`; não pode ser futura                                 |
+| gender                            | `MALE`, `FEMALE`, `OTHER` ou `NOT_INFORMED`                       |
+| height                            | Inteiro em cm, de 30 a 300                                        |
+| weight                            | Decimal(5,2) em kg, de 0.5 a 700; exposto na API como `number`    |
 | deletedAt                         | Soft delete; listagens padrão ignoram excluídos                   |
 
 **Comportamentos (casos de uso):**
@@ -48,6 +54,9 @@ Convenção: **raiz de agregado** possui identidade própria e expõe `uuid` na 
 * Cadastrar paciente
 * Listar pacientes ativos
 * Editar perfil
+* Consultar paciente por `uuid` (`GET /patients/:uuid`)
+
+A listagem é paginada com `?page&limit` (default 20, máximo 100) e responde `{ data, meta: { page, limit, total } }`.
 
 **Consistência:**
 
@@ -249,6 +258,10 @@ Quando R10 for implementada:
 1. **Solicitação de exclusão de dados pessoais** do paciente.
 
 2. **Campos PII** (`name`, `phone`, `email`, `birthDate`, etc.) anonimizados ou substituídos por placeholders irreversíveis.
+
+   * `email`: substituído por `anon-<uuid>@anonymized.invalid`, com `<uuid>` igual ao `uuid` do paciente. O valor é determinístico (mantém a operação idempotente) e único, compatível com o índice único parcial de `patients.email`.
+   * O TLD `.invalid` é reservado pela [RFC 2606](https://www.rfc-editor.org/rfc/rfc2606) (detalhado na [RFC 6761](https://www.rfc-editor.org/rfc/rfc6761)) e nunca resolve na internet: o valor não colide com um email real nem recebe mensagens.
+   * É uma escolha técnica, não uma exigência da LGPD, que não prescreve formato de placeholder.
 
 3. **Agendamentos** permanecem com horários e demais dados necessários para retenção histórica.
 

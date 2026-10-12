@@ -4,6 +4,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.6.0] - 2026-10-09
+
+Patient 1/4: cadastro (#20, parte de #6).
+
+### Adicionado
+
+- `enum Gender`, `model Patient` e migration `create_patient`.
+- `POST /patients` (R1): DTO com validação, regras puras (`isBirthDateInFuture`, `normalizeEmail`), mapper sem `id`/`deletedAt` e Swagger.
+- `test/utils/http.ts` (`api(app)`) e e2e de cadastro.
+
+### Alterado
+
+- `docs/domain.md` registra as decisões da fatia Patient; `docs/architecture.md` corrige `height` para `int`.
+- `README.md` ganha a seção "Fluxo de trabalho (harness)" com o diagrama do fluxo Spec → Red → Green → Refactor → Verify → Docs → Release.
+- `docs/domain.md`: política LGPD (rascunho) registra o placeholder `anon-<uuid>@anonymized.invalid` para o email anonimizado, com referência às RFCs 2606 e 6761.
+- `docs/harness-assessment.md`: avaliação do projeto e da maturidade do harness atualizada para o estado de 2026-10-12 (fundação e Patient prontas, CI ativo, lacunas reclassificadas).
+- `version` do `package.json` e do Swagger para 0.6.0.
+
 ## [0.5.0] - 2026-10-09
 
 Fundação técnica 5/5 (#12, parte de #5).
@@ -79,6 +97,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.6.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.2.0...v0.3.0
