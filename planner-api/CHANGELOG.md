@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.10.0] - 2026-10-12
+
+Erro de domínio sem acoplamento a HTTP (#23, parte de #6). Ajuste da fatia Patient apontado em review: regra pura lançava `BadRequestException` e o 400 de data futura tinha formato diferente dos erros de validação.
+
+### Adicionado
+
+- `DomainError` e `DomainErrorFilter` global (`src/common/domain/`): regras puras lançam o erro de domínio e a borda HTTP o traduz para 400.
+- `assertBirthDateNotInFuture` em `patient.rules.ts`, que concentra a regra antes duplicada em `create` e `update`.
+
+### Alterado
+
+- O 400 de data de nascimento futura passa a responder `message` em array (`{ statusCode, error, message: [...] }`), igual ao `ValidationPipe`.
+- `docs/domain.md` e `CLAUDE.md` (Convenções) registram a convenção de erros de domínio.
+- `version` do `package.json` e do Swagger para 0.10.0.
+
 ## [0.9.0] - 2026-10-09
 
 Patient 4/4: edição (#23, parte de #6). Conclui a fatia Patient (R1, R2).
@@ -16,7 +31,6 @@ Patient 4/4: edição (#23, parte de #6). Conclui a fatia Patient (R1, R2).
 
 - `CLAUDE.md` (Estado atual): Patient pronta (R1, R2); próxima: Appointment (#24).
 - `Patient.uuid` passa a ser gerado pela aplicação (`randomUUID()` no service) em vez do `@default(uuid())` do Prisma Client; a coluna segue sem `DEFAULT` no banco e não há migration nova.
-- Regra de data de nascimento futura passa a lançar `DomainError` (`assertBirthDateNotInFuture`) em vez de `BadRequestException`; o `DomainErrorFilter` global responde 400 com `message` em array, igual ao `ValidationPipe`.
 - `version` do `package.json` e do Swagger para 0.9.0.
 
 ### Corrigido
@@ -142,6 +156,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.10.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.6.0...v0.7.0
