@@ -19,6 +19,7 @@ Patient 1/4: cadastro (#20, parte de #6).
 - `docs/domain.md` registra as decisões da fatia Patient; `docs/architecture.md` corrige `height` para `int`.
 - `README.md` ganha a seção "Fluxo de trabalho (harness)" com o diagrama do fluxo Spec → Red → Green → Refactor → Verify → Docs → Release.
 - `docs/domain.md`: política LGPD (rascunho) registra o placeholder `anon-<uuid>@anonymized.invalid` para o email anonimizado, com referência às RFCs 2606 e 6761.
+- `docs/harness-assessment.md`: avaliação do projeto e da maturidade do harness atualizada para o estado de 2026-10-12 (fundação e Patient prontas, CI ativo, lacunas reclassificadas).
 - `version` do `package.json` e do Swagger para 0.6.0.
 
 ## [0.5.0] - 2026-10-09
