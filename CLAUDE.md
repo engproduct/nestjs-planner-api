@@ -77,6 +77,7 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 - **Módulos por capacidade** em `planner-api/src/`: `patients/`, `users/`, `appointments/`, `observations/`, `auth/`, `prisma/`.
 - **Camadas:** controller (HTTP, status, delegação) → application service (caso de uso) → regras de domínio puras e testáveis → Prisma. Sem regra de negócio em controller.
 - **Validação** de formato/presença em DTOs; regras entre agregados na camada de aplicação/domínio.
+- **Erros de domínio:** regras puras lançam `DomainError` (`src/common/domain/`), nunca exceções HTTP; o filtro global responde 400 com `message` em array. 404 e 409 seguem como exceções do Nest na camada de aplicação.
 - **Identificadores:** a API expõe apenas `uuid`; `id` numérico é interno.
 - **Soft delete** via `deletedAt`; listagens e validações de referência ignoram registros excluídos.
 - `User` com `role = DOCTOR` representa o médico — não criar entidade `Doctor`.

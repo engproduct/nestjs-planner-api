@@ -16,6 +16,7 @@ Patient 4/4: edição (#23, parte de #6). Conclui a fatia Patient (R1, R2).
 
 - `CLAUDE.md` (Estado atual): Patient pronta (R1, R2); próxima: Appointment (#24).
 - `Patient.uuid` passa a ser gerado pela aplicação (`randomUUID()` no service) em vez do `@default(uuid())` do Prisma Client; a coluna segue sem `DEFAULT` no banco e não há migration nova.
+- Regra de data de nascimento futura passa a lançar `DomainError` (`assertBirthDateNotInFuture`) em vez de `BadRequestException`; o `DomainErrorFilter` global responde 400 com `message` em array, igual ao `ValidationPipe`.
 - `version` do `package.json` e do Swagger para 0.9.0.
 
 ### Corrigido

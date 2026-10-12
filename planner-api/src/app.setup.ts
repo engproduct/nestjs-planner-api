@@ -1,11 +1,13 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DomainErrorFilter } from './common/domain/domain-error.filter.js';
 import { Env } from './config/env.js';
 
 // Configuração global compartilhada por main.ts e pelos testes e2e, para que
 // os testes exercitem a mesma aplicação que sobe em produção.
 export function configureApp(app: INestApplication): void {
+  app.useGlobalFilters(new DomainErrorFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -13,16 +12,14 @@ import { CreatePatientDto } from './dto/create-patient.dto.js';
 import { UpdatePatientDto } from './dto/update-patient.dto.js';
 import { PatientResponseDto } from './dto/patient-response.dto.js';
 import { toPatientResponse } from './patient.mapper.js';
-import { isBirthDateInFuture } from './patient.rules.js';
+import { assertBirthDateNotInFuture } from './patient.rules.js';
 
 @Injectable()
 export class PatientsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePatientDto): Promise<PatientResponseDto> {
-    if (isBirthDateInFuture(dto.birthDate, new Date())) {
-      throw new BadRequestException('birthDate must not be in the future');
-    }
+    assertBirthDateNotInFuture(dto.birthDate, new Date());
     try {
       const patient = await this.prisma.patient.create({
         data: {
@@ -75,8 +72,8 @@ export class PatientsService {
     uuid: string,
     dto: UpdatePatientDto,
   ): Promise<PatientResponseDto> {
-    if (dto.birthDate && isBirthDateInFuture(dto.birthDate, new Date())) {
-      throw new BadRequestException('birthDate must not be in the future');
+    if (dto.birthDate) {
+      assertBirthDateNotInFuture(dto.birthDate, new Date());
     }
     const current = await this.prisma.patient.findFirst({
       where: { uuid, deletedAt: null },
