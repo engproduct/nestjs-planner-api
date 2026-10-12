@@ -17,6 +17,7 @@ Patient 1/4: cadastro (#20, parte de #6).
 ### Alterado
 
 - `docs/domain.md` registra as decisões da fatia Patient; `docs/architecture.md` corrige `height` para `int`.
+- `README.md` ganha a seção "Fluxo de trabalho (harness)" com o diagrama do fluxo Spec → Red → Green → Refactor → Verify → Docs → Release.
 - `version` do `package.json` e do Swagger para 0.6.0.
 
 ## [0.5.0] - 2026-10-09

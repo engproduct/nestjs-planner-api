@@ -6,6 +6,32 @@ Caso de desafio backend para a construção de um prontuário eletrônico em Nes
 
 ---
 
+### Fluxo de trabalho (harness)
+
+Cada entrega é uma **fatia vertical**, construída com TDD e verificação explícita. Detalhes em [architecture.md](./docs/architecture.md) e na ordem das fatias em [domain.md](./docs/domain.md#mapeamento-prd--fatias-verticais-ordem-sugerida).
+
+```mermaid
+flowchart LR
+    S["1. Spec<br/>regras R* / I* da fatia"] --> R["2. Red<br/>teste que falha"]
+    R --> G["3. Green<br/>implementação mínima"]
+    G --> RF["4. Refactor<br/>com testes verdes"]
+    RF --> V{"5. Verify<br/>lint + unit + e2e"}
+    V -- falhou --> G
+    V -- passou --> D["6. Docs<br/>atualiza docs/ se mudou domínio ou stack"]
+    D --> RL["7. Release<br/>CHANGELOG + bump de versão + PR"]
+    RL -. próxima fatia vertical .-> S
+
+    C{{"Conflito com docs/?"}} -.-> P["Parar e perguntar<br/>(não inventar regra)"]
+    S -.-> C
+
+    classDef gate fill:#fde68a,stroke:#b45309,color:#000
+    classDef stop fill:#fecaca,stroke:#b91c1c,color:#000
+    class V gate
+    class C,P stop
+```
+
+---
+
 ### Setup
 
 Node é fixado em [`.nvmrc`](./.nvmrc) (24.21.0) e em `engines` no `package.json`.
