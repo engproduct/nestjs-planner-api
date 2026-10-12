@@ -84,6 +84,18 @@ describe('Patients (e2e)', () => {
         .expect(400);
     });
 
+    it('R1: reports a future birthDate in the same error shape as DTO validation', async () => {
+      const { body } = await api(app)
+        .post('/patients')
+        .send({ ...validPatient, birthDate: '2999-01-01' })
+        .expect(400);
+      expect(body).toEqual({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: ['birthDate must not be in the future'],
+      });
+    });
+
     it('R1: rejects an extra field with 400', () => {
       return api(app)
         .post('/patients')
