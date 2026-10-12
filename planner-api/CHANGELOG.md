@@ -6,7 +6,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [0.10.0] - 2026-10-12
 
-Erro de domínio sem acoplamento a HTTP (#23, parte de #6). Ajuste da fatia Patient apontado em review: regra pura lançava `BadRequestException` e o 400 de data futura tinha formato diferente dos erros de validação.
+Erro de domínio sem acoplamento a HTTP (#37, parte de #6). Ajuste da fatia Patient apontado em review: regra pura lançava `BadRequestException` e o 400 de data futura tinha formato diferente dos erros de validação.
 
 ### Adicionado
 
