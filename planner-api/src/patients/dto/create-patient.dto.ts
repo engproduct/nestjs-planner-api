@@ -18,6 +18,9 @@ import { normalizeEmail } from '../patient.rules.js';
 
 export class CreatePatientDto {
   @ApiProperty({ example: 'Maria Silva' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
   @IsNotEmpty()
   name!: string;
