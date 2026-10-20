@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
+import { Paginated, paginated } from '../common/pagination/paginated.js';
 import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
@@ -56,5 +58,36 @@ export class AppointmentsService {
       include: appointmentInclude,
     });
     return toAppointmentResponse(created);
+  }
+
+  // Agendamento de paciente ou médico excluído depois continua visível
+  // (histórico, R10): o filtro de deletedAt vale só para o próprio agendamento.
+  async findOne(uuid: string): Promise<AppointmentResponseDto> {
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { uuid, deletedAt: null },
+      include: appointmentInclude,
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+    return toAppointmentResponse(appointment);
+  }
+
+  async list(
+    query: PaginationQueryDto,
+  ): Promise<Paginated<AppointmentResponseDto>> {
+    const where = { deletedAt: null };
+    const [appointments, total] = await this.prisma.$transaction([
+      this.prisma.appointment.findMany({
+        where,
+        include: appointmentInclude,
+        // Desempate por id: ordem total, sem repetir nem pular entre páginas.
+        orderBy: [{ startTime: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.appointment.count({ where }),
+    ]);
+    return paginated(appointments.map(toAppointmentResponse), total, query);
   }
 }

@@ -142,6 +142,7 @@ O agregado referencia `Patient` e `User` por identidade. A camada de aplicação
 * **PATCH:** edita `startTime`, `endTime`, `description` e `doctorUuid`; `patientUuid` é imutável (400). O intervalo é validado com os valores combinados (atuais + novos).
 * **DELETE:** soft delete → 204; inexistente ou já excluído → 404; **409 se houver `Observation` ativa** (implementado na fatia Observation).
 * **Listagem:** paginada como a de Patient, ordenada por `startTime` e, em empate, por `id`; sem filtros nesta fatia (a Auth restringirá ao médico logado).
+* **Limitação consciente de tempo (#27):** `startTime`/`endTime` guardam um instante em UTC (`Timestamptz`), sem o offset nem o fuso de origem. Basta para clínica única e para comparação e sobreposição (R9). Fica fora de escopo o fuso IANA da clínica (`timeZone`, ex.: `America/Sao_Paulo`), necessário para exibir no horário local da clínica, para agendamentos futuros que sobrevivam a mudanças de horário de verão e para recorrência; se a internacionalização virar requisito, adiciona-se essa coluna, sem trocar o tipo. `createdAt`/`updatedAt` seguem `timestamp(3)` sem fuso, no padrão de `patients`/`users` (o Prisma grava em UTC).
 
 ---
 

@@ -192,4 +192,161 @@ describe('Appointments (e2e)', () => {
       return post({ ...valid, doctorUuid: admin.uuid }).expect(404);
     });
   });
+  describe('GET /appointments/:uuid', () => {
+    it('R4: returns 200 with the same shape as POST', async () => {
+      const { body: created } = await post(valid).expect(201);
+
+      const { body } = await api(app)
+        .get(`/appointments/${created.uuid}`)
+        .expect(200);
+      expect(body).toEqual(created);
+    });
+
+    it('R4: returns 404 for an unknown uuid', () => {
+      return api(app).get(`/appointments/${unknownUuid}`).expect(404);
+    });
+
+    it('R4: returns 404 for a deleted appointment', async () => {
+      const { body } = await post(valid).expect(201);
+      await app.get(PrismaService).appointment.update({
+        where: { uuid: body.uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).get(`/appointments/${body.uuid}`).expect(404);
+    });
+
+    it.each(['not-a-uuid', '123', `${unknownUuid}x`])(
+      'R4: returns 400 for an invalid uuid %j',
+      async (uuid) => {
+        await api(app).get(`/appointments/${uuid}`).expect(400);
+      },
+    );
+  });
+
+  describe('GET /appointments', () => {
+    const at = (hour: number) =>
+      `2026-10-20T${String(hour).padStart(2, '0')}:00:00Z`;
+    // Médicos distintos: horários iguais não colidem com a futura regra R9.
+    const create = async (hour: number) => {
+      const doctor = await createUser(app, { role: 'DOCTOR' });
+      const { body } = await post({
+        ...valid,
+        doctorUuid: doctor.uuid,
+        startTime: at(hour),
+        endTime: at(hour + 1),
+      }).expect(201);
+      return body as { uuid: string };
+    };
+    const list = (query = '') => api(app).get(`/appointments${query}`);
+    const uuids = (body: { data: { uuid: string }[] }) =>
+      body.data.map((a) => a.uuid);
+
+    it('R4: returns an empty page with defaults when there are no appointments', async () => {
+      const { body } = await list().expect(200);
+      expect(body).toEqual({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0 },
+      });
+    });
+
+    it('R4: lists appointments with the same shape as POST', async () => {
+      const { body: created } = await post(valid).expect(201);
+
+      const { body } = await list().expect(200);
+      expect(body).toEqual({
+        data: [created],
+        meta: { page: 1, limit: 20, total: 1 },
+      });
+    });
+
+    it('R4: orders by startTime, not by creation', async () => {
+      const late = await create(15);
+      const early = await create(9);
+      const middle = await create(12);
+
+      const { body } = await list().expect(200);
+      expect(uuids(body)).toEqual([early.uuid, middle.uuid, late.uuid]);
+    });
+
+    it('R4: breaks startTime ties by creation order', async () => {
+      const first = await create(10);
+      const second = await create(10);
+      const third = await create(10);
+
+      const { body } = await list().expect(200);
+      expect(uuids(body)).toEqual([first.uuid, second.uuid, third.uuid]);
+    });
+
+    it('R4: paginates without duplicates or gaps across pages', async () => {
+      const created: { uuid: string }[] = [];
+      for (const hour of [10, 8, 10, 8, 10]) {
+        created.push(await create(hour));
+      }
+      const expected = [1, 3, 0, 2, 4].map((i) => created[i].uuid);
+
+      const { body: page1 } = await list('?page=1&limit=2').expect(200);
+      const { body: page2 } = await list('?page=2&limit=2').expect(200);
+      const { body: page3 } = await list('?page=3&limit=2').expect(200);
+
+      expect(page1.meta).toEqual({ page: 1, limit: 2, total: 5 });
+      expect(page2.meta).toEqual({ page: 2, limit: 2, total: 5 });
+      expect(page3.meta).toEqual({ page: 3, limit: 2, total: 5 });
+      expect(page1.data).toHaveLength(2);
+      expect(page3.data).toHaveLength(1);
+      expect([...uuids(page1), ...uuids(page2), ...uuids(page3)]).toEqual(
+        expected,
+      );
+    });
+
+    it('R4: omits soft-deleted appointments from data and total', async () => {
+      const deleted = await create(9);
+      const kept = await create(10);
+      await app.get(PrismaService).appointment.update({
+        where: { uuid: deleted.uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      const { body } = await list().expect(200);
+      expect(uuids(body)).toEqual([kept.uuid]);
+      expect(body.meta.total).toBe(1);
+    });
+
+    it('R4: keeps appointments visible after the patient or doctor is deleted', async () => {
+      const { body: created } = await post(valid).expect(201);
+      const prisma = app.get(PrismaService);
+      await prisma.patient.update({
+        where: { uuid: valid.patientUuid },
+        data: { deletedAt: new Date() },
+      });
+      await prisma.user.update({
+        where: { uuid: valid.doctorUuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).get(`/appointments/${created.uuid}`).expect(200, created);
+      const { body } = await list().expect(200);
+      expect(body.data).toEqual([created]);
+    });
+
+    it('R4: accepts the maximum limit of 100', async () => {
+      const { body } = await list('?limit=100').expect(200);
+      expect(body.meta.limit).toBe(100);
+    });
+
+    it.each([
+      'page=0',
+      'page=-1',
+      'page=abc',
+      'page=1.5',
+      'page=1e20',
+      'limit=0',
+      'limit=-5',
+      'limit=abc',
+      'limit=101',
+      'patientUuid=' + unknownUuid,
+    ])('R4: rejects invalid query %s with 400', async (query) => {
+      await list(`?${query}`).expect(400);
+    });
+  });
 });
