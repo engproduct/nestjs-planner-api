@@ -218,8 +218,8 @@ describe('Appointments (e2e)', () => {
 
     it.each(['not-a-uuid', '123', `${unknownUuid}x`])(
       'R4: returns 400 for an invalid uuid %j',
-      (uuid) => {
-        return api(app).get(`/appointments/${uuid}`).expect(400);
+      async (uuid) => {
+        await api(app).get(`/appointments/${uuid}`).expect(400);
       },
     );
   });
@@ -279,7 +279,7 @@ describe('Appointments (e2e)', () => {
     });
 
     it('R4: paginates without duplicates or gaps across pages', async () => {
-      const created = [];
+      const created: { uuid: string }[] = [];
       for (const hour of [10, 8, 10, 8, 10]) {
         created.push(await create(hour));
       }
@@ -341,8 +341,8 @@ describe('Appointments (e2e)', () => {
       'limit=abc',
       'limit=101',
       'patientUuid=' + unknownUuid,
-    ])('R4: rejects invalid query %s with 400', (query) => {
-      return list(`?${query}`).expect(400);
+    ])('R4: rejects invalid query %s with 400', async (query) => {
+      await list(`?${query}`).expect(400);
     });
   });
 });
