@@ -4,6 +4,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.17.0] - 2026-10-20
+
+Correções da revisão adversarial do #46 (#47): corrida `PATCH`×`DELETE` e edição de histórico de paciente/médico inativo.
+
+### Alterado
+
+- `PATCH /appointments/:uuid` em agendamento cujo paciente está excluído, ou cujo médico atual está excluído ou sem `role = DOCTOR`, → **409** para qualquer corpo (só `description`, o mesmo `doctorUuid`, troca para um médico válido e `{}`): o histórico (R10) fica só leitura. Ordem: agendamento inexistente/excluído → 404; referência atual inativa → 409; regras do agregado → 400; novo médico inválido → 404. O `DELETE` desse agendamento continua permitido. Documentado no Swagger e em `docs/domain.md`.
+- `version` do `package.json` e do Swagger para 0.17.0.
+
+### Corrigido
+
+- `PATCH /appointments/:uuid` e `PATCH /patients/:uuid` não editam mais um registro excluído entre a leitura e a gravação: a gravação exige `deletedAt` nulo e o `P2025` do Prisma (helper `isNotFound`) vira 404.
+- `doctorUuid` igual ao do médico atual em maiúsculas é tratado como o mesmo médico (sem revalidar I3).
+
 ## [0.16.0] - 2026-10-20
 
 Fatia Appointment 4/4 (#28, conclui #24): edição e exclusão de agendamentos (R4).
@@ -257,6 +271,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.17.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.13.0...v0.14.0
