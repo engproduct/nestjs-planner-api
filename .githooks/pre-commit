@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# pre-commit: só lint. Testes não rodam aqui porque os commits de Red do TDD
+# falham de propósito; a suíte completa roda no pre-push.
+set -e
+. "$(dirname "$0")/lib.sh"
+use_node
+cd_app
+if ! yarn lint; then
+  echo "pre-commit: lint falhou. Testes não rodam no commit, só no push." >&2
+  exit 1
+fi
