@@ -1,27 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-
+// Datas em UTC (toISOString). Os decorators de Swagger entram no
+// Appointment 3/4 (#27), pelo corte de reserva do limite de 500 linhas.
 export class AppointmentResponseDto {
-  @ApiProperty({ format: 'uuid' })
   uuid!: string;
-
-  @ApiProperty({ format: 'uuid' })
   patientUuid!: string;
-
-  @ApiProperty({ format: 'uuid' })
   doctorUuid!: string;
-
-  @ApiProperty({ example: '2026-10-20T13:00:00.000Z', description: 'UTC' })
   startTime!: string;
-
-  @ApiProperty({ example: '2026-10-20T13:30:00.000Z', description: 'UTC' })
   endTime!: string;
-
-  @ApiProperty()
   description!: string;
-
-  @ApiProperty()
   createdAt!: Date;
-
-  @ApiProperty()
   updatedAt!: Date;
 }
