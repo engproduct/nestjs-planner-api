@@ -11,6 +11,16 @@ interface ScheduleInput {
   description: string;
 }
 
+interface RestoreInput extends Omit<ScheduleInput, 'description'> {
+  uuid: string;
+  description: string;
+}
+
+interface RescheduleInput {
+  startTime?: Date;
+  endTime?: Date;
+}
+
 // Entidade raiz do agregado Appointment. Referencia Patient e o médico (User)
 // por uuid; a existência e o estado deles são validados na aplicação (I2, I3).
 export class Appointment {
@@ -29,6 +39,42 @@ export class Appointment {
       input.doctorUuid,
       input.period,
       normalizeDescription(input.description),
+    );
+  }
+
+  // Reidrata a partir do banco: os dados já foram validados ao entrar.
+  static restore(input: RestoreInput): Appointment {
+    return new Appointment(
+      input.uuid,
+      input.patientUuid,
+      input.doctorUuid,
+      input.period,
+      input.description,
+    );
+  }
+
+  // Imutável: devolve um novo Appointment. O intervalo é revalidado (I1) com os
+  // valores combinados, atuais + novos.
+  reschedule({ startTime, endTime }: RescheduleInput): Appointment {
+    return new Appointment(
+      this.uuid,
+      this.patientUuid,
+      this.doctorUuid,
+      TimeRange.create(
+        startTime ?? this.period.start,
+        endTime ?? this.period.end,
+      ),
+      this.description,
+    );
+  }
+
+  changeDescription(description: string): Appointment {
+    return new Appointment(
+      this.uuid,
+      this.patientUuid,
+      this.doctorUuid,
+      this.period,
+      normalizeDescription(description),
     );
   }
 }

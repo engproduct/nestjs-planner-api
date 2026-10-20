@@ -103,7 +103,7 @@ describe('Appointment', () => {
     });
 
     it('returns the same period when nothing is given', () => {
-      expect(appointment.reschedule({}).period).toBe(input.period);
+      expect(appointment.reschedule({}).period).toEqual(input.period);
     });
 
     it.each([
