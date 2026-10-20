@@ -291,6 +291,9 @@ describe('Appointments (e2e)', () => {
 
       expect(page1.meta).toEqual({ page: 1, limit: 2, total: 5 });
       expect(page2.meta).toEqual({ page: 2, limit: 2, total: 5 });
+      expect(page3.meta).toEqual({ page: 3, limit: 2, total: 5 });
+      expect(page1.data).toHaveLength(2);
+      expect(page3.data).toHaveLength(1);
       expect([...uuids(page1), ...uuids(page2), ...uuids(page3)]).toEqual(
         expected,
       );
@@ -336,6 +339,7 @@ describe('Appointments (e2e)', () => {
       'page=-1',
       'page=abc',
       'page=1.5',
+      'page=1e20',
       'limit=0',
       'limit=-5',
       'limit=abc',

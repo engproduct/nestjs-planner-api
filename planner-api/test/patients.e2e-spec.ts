@@ -218,6 +218,7 @@ describe('Patients (e2e)', () => {
       'page=-1',
       'page=abc',
       'page=1.5',
+      'page=1e20',
       'limit=0',
       'limit=-5',
       'limit=abc',

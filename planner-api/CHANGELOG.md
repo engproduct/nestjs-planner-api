@@ -20,6 +20,10 @@ Fatia Appointment 3/4 (#27, parte de #24): consulta e listagem de agendamentos (
 
 - `version` do `package.json` e do Swagger para 0.15.0.
 
+### Corrigido
+
+- `PaginationQueryDto`: `page` fora do inteiro seguro (ex.: `page=1e20`) respondia 500; agora tem teto técnico (`MAX_SAFE_INTEGER / 100`) e responde 400. Vale também para `GET /patients`.
+
 ## [0.14.0] - 2026-10-20
 
 Fatia Appointment 2/4 (#26, parte de #24): cadastro de agendamentos, `POST /appointments` (R3, I1–I3). Os decorators de Swagger do `AppointmentResponseDto` ficam para o 3/4 (#27), pelo corte de reserva do limite de 500 linhas.
