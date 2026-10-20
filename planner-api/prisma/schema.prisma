@@ -19,6 +19,11 @@ enum Gender {
   NOT_INFORMED
 }
 
+enum Role {
+  DOCTOR
+  ADMIN
+}
+
 model Patient {
   id        Int       @id @default(autoincrement())
   uuid      String    @unique @db.Uuid // gerado pela aplicação (sem default no banco)
@@ -36,4 +41,17 @@ model Patient {
   // O índice único parcial de email (WHERE "deletedAt" IS NULL) vive só na
   // migration patient_email_active_unique: o Prisma 7.10 não o modela no schema.
   @@map("patients")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  uuid         String    @unique @db.Uuid // gerado pela aplicação (sem default no banco)
+  email        String    @unique
+  passwordHash String? // opcional até a fatia Auth (#30)
+  role         Role
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@map("users")
 }
