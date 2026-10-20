@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
 import { Paginated, paginated } from '../common/pagination/paginated.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { Role } from '../generated/prisma/enums.js';
+import { isNotFound } from '../prisma/prisma-errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   appointmentInclude,
@@ -12,6 +18,12 @@ import { TimeRange } from './domain/time-range.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto.js';
 import { AppointmentResponseDto } from './dto/appointment-response.dto.js';
+
+// Leitura do PATCH: além do uuid, o estado das referências atuais (R10).
+const updateInclude = {
+  patient: { select: { uuid: true, deletedAt: true } },
+  user: { select: { uuid: true, deletedAt: true, role: true } },
+} satisfies Prisma.AppointmentInclude;
 
 @Injectable()
 export class AppointmentsService {
@@ -98,10 +110,21 @@ export class AppointmentsService {
   ): Promise<AppointmentResponseDto> {
     const current = await this.prisma.appointment.findFirst({
       where: { uuid, deletedAt: null },
-      include: appointmentInclude,
+      include: updateInclude,
     });
     if (!current) {
       throw new NotFoundException('Appointment not found');
+    }
+    // Histórico de paciente excluído ou de médico excluído/sem role DOCTOR é
+    // só leitura (R10): 409 para qualquer corpo, antes das regras do agregado.
+    if (
+      current.patient.deletedAt !== null ||
+      current.user.deletedAt !== null ||
+      current.user.role !== Role.DOCTOR
+    ) {
+      throw new ConflictException(
+        'Appointment of a deleted patient or inactive doctor is read-only',
+      );
     }
 
     let appointment = Appointment.restore({
@@ -118,9 +141,13 @@ export class AppointmentsService {
       appointment = appointment.changeDescription(dto.description);
     }
 
-    // Só revalida o médico (I3) quando ele muda.
+    // Só revalida o médico (I3) quando ele muda; uuid sem diferenciar
+    // maiúsculas/minúsculas, como o @IsUUID e o Postgres.
     let userId: number | undefined;
-    if (dto.doctorUuid !== undefined && dto.doctorUuid !== current.user.uuid) {
+    if (
+      dto.doctorUuid !== undefined &&
+      dto.doctorUuid.toLowerCase() !== current.user.uuid.toLowerCase()
+    ) {
       const doctor = await this.prisma.user.findFirst({
         where: { uuid: dto.doctorUuid, role: Role.DOCTOR, deletedAt: null },
         select: { id: true },
@@ -131,17 +158,26 @@ export class AppointmentsService {
       userId = doctor.id;
     }
 
-    const updated = await this.prisma.appointment.update({
-      where: { id: current.id },
-      data: {
-        userId,
-        startTime: appointment.period.start,
-        endTime: appointment.period.end,
-        description: appointment.description,
-      },
-      include: appointmentInclude,
-    });
-    return toAppointmentResponse(updated);
+    // deletedAt: null na gravação: um DELETE entre a leitura e a escrita
+    // vira P2025 (404) em vez de editar um registro excluído.
+    try {
+      const updated = await this.prisma.appointment.update({
+        where: { id: current.id, deletedAt: null },
+        data: {
+          userId,
+          startTime: appointment.period.start,
+          endTime: appointment.period.end,
+          description: appointment.description,
+        },
+        include: appointmentInclude,
+      });
+      return toAppointmentResponse(updated);
+    } catch (error) {
+      if (isNotFound(error)) {
+        throw new NotFoundException('Appointment not found');
+      }
+      throw error;
+    }
   }
 
   async remove(uuid: string): Promise<void> {
