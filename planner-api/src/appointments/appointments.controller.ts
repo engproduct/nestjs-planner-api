@@ -1,7 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
   Param,
   ParseUUIDPipe,
   Post,
@@ -10,6 +14,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
@@ -20,6 +25,7 @@ import { Paginated } from '../common/pagination/paginated.js';
 import { AppointmentsService } from './appointments.service.js';
 import { AppointmentResponseDto } from './dto/appointment-response.dto.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto.js';
 
 @ApiTags('appointments')
 @Controller('appointments')
@@ -53,5 +59,30 @@ export class AppointmentsController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<AppointmentResponseDto> {
     return this.appointmentsService.findOne(uuid);
+  }
+
+  @Patch(':uuid')
+  @ApiOkResponse({ type: AppointmentResponseDto })
+  @ApiBadRequestResponse({
+    description: 'uuid, dados ou intervalo combinado inválidos',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Agendamento inexistente ou excluído; ou médico inexistente, excluído ou sem role DOCTOR',
+  })
+  update(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdateAppointmentDto,
+  ): Promise<AppointmentResponseDto> {
+    return this.appointmentsService.update(uuid, dto);
+  }
+
+  @Delete(':uuid')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Agendamento excluído (soft delete)' })
+  @ApiBadRequestResponse({ description: 'uuid inválido' })
+  @ApiNotFoundResponse({ description: 'Agendamento inexistente ou excluído' })
+  remove(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<void> {
+    return this.appointmentsService.remove(uuid);
   }
 }

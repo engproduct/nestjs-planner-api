@@ -349,4 +349,204 @@ describe('Appointments (e2e)', () => {
       await list(`?${query}`).expect(400);
     });
   });
+
+  describe('PATCH /appointments/:uuid', () => {
+    let uuid: string;
+    let created: Record<string, string>;
+    const patch = (body: object, target = () => uuid) =>
+      api(app).patch(`/appointments/${target()}`).send(body);
+    const get = () => api(app).get(`/appointments/${uuid}`);
+
+    beforeEach(async () => {
+      ({ body: created } = await post(valid).expect(201));
+      uuid = created.uuid;
+    });
+
+    it('R4: edits only startTime and persists it', async () => {
+      const { body } = await patch({
+        startTime: '2026-10-20T13:30:00Z',
+      }).expect(200);
+
+      expect(body).toEqual({
+        ...created,
+        startTime: '2026-10-20T13:30:00.000Z',
+        updatedAt: expect.any(String),
+      });
+      await get().expect(200, body);
+    });
+
+    it('R4: edits only endTime and persists it', async () => {
+      const { body } = await patch({
+        endTime: '2026-10-20T15:00:00-03:00',
+      }).expect(200);
+
+      expect(body.startTime).toBe(created.startTime);
+      expect(body.endTime).toBe('2026-10-20T18:00:00.000Z');
+      await get().expect(200, body);
+    });
+
+    it('R4: edits only the description (trimmed) and persists it', async () => {
+      const { body } = await patch({ description: '  Retorno  ' }).expect(200);
+
+      expect(body).toEqual({
+        ...created,
+        description: 'Retorno',
+        updatedAt: expect.any(String),
+      });
+      await get().expect(200, body);
+    });
+
+    it('R4: changes to another active doctor and persists it', async () => {
+      const other = await createUser(app, { role: 'DOCTOR' });
+
+      const { body } = await patch({ doctorUuid: other.uuid }).expect(200);
+
+      expect(body.doctorUuid).toBe(other.uuid);
+      await get().expect(200, body);
+    });
+
+    it('R4: an empty body changes nothing, like PATCH /patients', async () => {
+      const { body } = await patch({}).expect(200);
+
+      expect(body).toEqual({ ...created, updatedAt: expect.any(String) });
+    });
+
+    it('I1: rejects an endTime earlier than the current startTime with 400', async () => {
+      const { body } = await patch({ endTime: '2026-10-20T12:00:00Z' }).expect(
+        400,
+      );
+
+      expect(body.message).toEqual(['startTime must be before endTime']);
+      await get().expect(200, created);
+    });
+
+    it('I1: rejects a startTime after the current endTime with 400', () => {
+      return patch({ startTime: '2026-10-20T15:00:00Z' }).expect(400);
+    });
+
+    it('I1: rejects startTime equal to endTime with 400', () => {
+      return patch({
+        startTime: '2026-10-20T14:00:00Z',
+        endTime: '2026-10-20T11:00:00-03:00',
+      }).expect(400);
+    });
+
+    it('R4: rejects patientUuid in the body with 400 (immutable)', async () => {
+      await patch({ patientUuid: unknownUuid }).expect(400);
+      await patch({ patientUuid: valid.patientUuid }).expect(400);
+    });
+
+    it.each(['doctorUuid', 'startTime', 'endTime', 'description'])(
+      'R4: rejects null %s with 400',
+      async (field) => {
+        await patch({ [field]: null }).expect(400);
+      },
+    );
+
+    it.each([
+      ['doctorUuid', 'not-a-uuid'],
+      ['startTime', '2026-10-20T13:00:00'],
+      ['startTime', '2026-10-20'],
+      ['endTime', '2026-10-20T14:00:00+0300'],
+      ['endTime', 1792501200000],
+      ['description', ''],
+      ['description', '   '],
+    ])('R4: rejects invalid %s=%j with 400', async (field, value) => {
+      await patch({ [field]: value }).expect(400);
+    });
+
+    it('R4: rejects a description over 1000 characters with 400', () => {
+      return patch({ description: 'a'.repeat(1001) }).expect(400);
+    });
+
+    it('R4: rejects an extra field with 400', () => {
+      return patch({ id: 1 }).expect(400);
+    });
+
+    it('I3: returns 404 for an unknown doctor', () => {
+      return patch({ doctorUuid: unknownUuid }).expect(404);
+    });
+
+    it('I3: returns 404 for a deleted doctor', async () => {
+      const doctor = await createUser(app, {
+        role: 'DOCTOR',
+        deletedAt: new Date(),
+      });
+
+      await patch({ doctorUuid: doctor.uuid }).expect(404);
+    });
+
+    it('I3: returns 404 for a user without role DOCTOR', async () => {
+      const admin = await createUser(app, { role: 'ADMIN' });
+
+      await patch({ doctorUuid: admin.uuid }).expect(404);
+      await get().expect(200, created);
+    });
+
+    it('R4: returns 404 for an unknown appointment', () => {
+      return patch({ description: 'x' }, () => unknownUuid).expect(404);
+    });
+
+    it('R4: returns 404 for a deleted appointment', async () => {
+      await app.get(PrismaService).appointment.update({
+        where: { uuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await patch({ description: 'x' }).expect(404);
+    });
+
+    it('R4: returns 400 for a malformed uuid', () => {
+      return patch({}, () => 'not-a-uuid').expect(400);
+    });
+  });
+
+  describe('DELETE /appointments/:uuid', () => {
+    const del = (target: string) => api(app).delete(`/appointments/${target}`);
+
+    it('R4: soft deletes with 204, hiding it from GET and the list', async () => {
+      const { body: created } = await post(valid).expect(201);
+      const { body: kept } = await post({
+        ...valid,
+        startTime: '2026-10-21T13:00:00Z',
+        endTime: '2026-10-21T14:00:00Z',
+      }).expect(201);
+
+      await del(created.uuid).expect(204).expect('');
+
+      await api(app).get(`/appointments/${created.uuid}`).expect(404);
+      const { body } = await api(app).get('/appointments').expect(200);
+      expect(body.data).toEqual([kept]);
+      expect(body.meta.total).toBe(1);
+    });
+
+    it('R4: keeps the row with deletedAt set (soft delete)', async () => {
+      const { body: created } = await post(valid).expect(201);
+
+      await del(created.uuid).expect(204);
+
+      const row = await app
+        .get(PrismaService)
+        .appointment.findUniqueOrThrow({ where: { uuid: created.uuid } });
+      expect(row.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it('R4: returns 404 when deleting twice', async () => {
+      const { body: created } = await post(valid).expect(201);
+
+      await del(created.uuid).expect(204);
+      await del(created.uuid).expect(404);
+    });
+
+    it('R4: returns 404 for an unknown appointment', () => {
+      return del(unknownUuid).expect(404);
+    });
+
+    it.each(['not-a-uuid', '123'])(
+      'R4: returns 400 for an invalid uuid %j',
+      async (uuid) => {
+        await del(uuid).expect(400);
+      },
+    );
+  });
 });

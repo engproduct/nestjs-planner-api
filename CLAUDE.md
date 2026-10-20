@@ -89,7 +89,7 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 
 ## Estado atual
 
-Fundação técnica pronta. Patient pronta (R1, R2); próxima: Appointment (#24). A `main` está protegida (PR + 3 checks de CI obrigatórios).
+Fundação técnica pronta. Patient pronta (R1, R2); Appointment pronta (R3, R4; a regra do 409 ao excluir com `Observation` ativa entra na fatia Observation). Próxima, pela ordem do [domain.md](docs/domain.md#mapeamento-prd--fatias-verticais-ordem-sugerida): Observation (R5–R8), ainda sem issues (Auth já tem #29–#31). A `main` está protegida (PR + 3 checks de CI obrigatórios).
 
 - Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
 - Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.
