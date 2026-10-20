@@ -108,10 +108,10 @@ describe('Appointments (e2e)', () => {
       'startTime',
       'endTime',
       'description',
-    ])('R3: rejects a missing %s with 400', (field) => {
+    ])('R3: rejects a missing %s with 400', async (field) => {
       const payload: Record<string, unknown> = { ...valid };
       delete payload[field];
-      return post(payload).expect(400);
+      await post(payload).expect(400);
     });
 
     it.each([
@@ -126,8 +126,8 @@ describe('Appointments (e2e)', () => {
       ['description', null],
       ['description', ''],
       ['description', '   '],
-    ])('R3: rejects invalid %s=%j with 400', (field, value) => {
-      return post({ ...valid, [field]: value }).expect(400);
+    ])('R3: rejects invalid %s=%j with 400', async (field, value) => {
+      await post({ ...valid, [field]: value }).expect(400);
     });
 
     it('R3: rejects a description over 1000 characters with 400', () => {
