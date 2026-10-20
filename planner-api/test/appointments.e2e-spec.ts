@@ -499,6 +499,122 @@ describe('Appointments (e2e)', () => {
     it('R4: returns 400 for a malformed uuid', () => {
       return patch({}, () => 'not-a-uuid').expect(400);
     });
+
+    it('R4: accepts the current doctorUuid in uppercase as unchanged', async () => {
+      const { body } = await patch({
+        doctorUuid: valid.doctorUuid.toUpperCase(),
+        description: 'Retorno',
+      }).expect(200);
+
+      expect(body.doctorUuid).toBe(valid.doctorUuid);
+      expect(body.description).toBe('Retorno');
+    });
+
+    it('R4: returns 404 when the appointment is deleted between read and write', async () => {
+      const prisma = app.get(PrismaService);
+      const delegate = prisma.appointment;
+      const findFirst = delegate.findFirst.bind(delegate);
+      // Simula um DELETE concorrente: exclui a linha logo após a leitura do PATCH.
+      const spy = vi
+        .spyOn(delegate, 'findFirst')
+        .mockImplementationOnce((async (args: unknown) => {
+          const found = await findFirst(args as never);
+          await prisma.appointment.updateMany({
+            where: { uuid },
+            data: { deletedAt: new Date() },
+          });
+          return found;
+        }) as never);
+
+      try {
+        await patch({ description: 'Retorno' }).expect(404);
+      } finally {
+        spy.mockRestore();
+      }
+
+      const row = await prisma.appointment.findUniqueOrThrow({
+        where: { uuid },
+      });
+      expect(row.description).toBe(created.description);
+      expect(row.deletedAt).toBeInstanceOf(Date);
+    });
+
+    describe('R10: history of a deleted patient or doctor is read-only', () => {
+      const softDeletePatient = () =>
+        app.get(PrismaService).patient.update({
+          where: { uuid: valid.patientUuid },
+          data: { deletedAt: new Date() },
+        });
+      const softDeleteDoctor = () =>
+        app.get(PrismaService).user.update({
+          where: { uuid: valid.doctorUuid },
+          data: { deletedAt: new Date() },
+        });
+
+      it('returns 409 for a deleted patient and changes nothing', async () => {
+        await softDeletePatient();
+
+        await patch({ description: 'Retorno' }).expect(409);
+        await get().expect(200, created);
+      });
+
+      it.each([
+        ['only description', () => ({ description: 'Retorno' })],
+        ['the same doctorUuid', () => ({ doctorUuid: valid.doctorUuid })],
+        [
+          'the same doctorUuid in uppercase',
+          () => ({ doctorUuid: valid.doctorUuid.toUpperCase() }),
+        ],
+        ['an empty body', () => ({})],
+      ])(
+        'returns 409 for a deleted current doctor with %s',
+        async (_, body) => {
+          await softDeleteDoctor();
+
+          await patch(body()).expect(409);
+          await get().expect(200, created);
+        },
+      );
+
+      it('returns 409 for a deleted current doctor even when switching to an active one', async () => {
+        await softDeleteDoctor();
+        const other = await createUser(app, { role: 'DOCTOR' });
+
+        await patch({ doctorUuid: other.uuid }).expect(409);
+        await get().expect(200, created);
+      });
+
+      it('returns 409 when the current doctor is no longer a DOCTOR', async () => {
+        await app.get(PrismaService).user.update({
+          where: { uuid: valid.doctorUuid },
+          data: { role: 'ADMIN' },
+        });
+
+        await patch({ doctorUuid: valid.doctorUuid }).expect(409);
+        await patch({ description: 'Retorno' }).expect(409);
+        await get().expect(200, created);
+      });
+
+      it('returns 409 for an empty body on a deleted patient', async () => {
+        await softDeletePatient();
+
+        await patch({}).expect(409);
+      });
+
+      it('checks 409 before the aggregate rules (400) and the new doctor (404)', async () => {
+        await softDeletePatient();
+
+        await patch({ endTime: '2026-10-20T12:00:00Z' }).expect(409);
+        await patch({ doctorUuid: unknownUuid }).expect(409);
+      });
+
+      it('still returns 404 for a deleted appointment', async () => {
+        await softDeletePatient();
+        await api(app).delete(`/appointments/${uuid}`).expect(204);
+
+        await patch({ description: 'Retorno' }).expect(404);
+      });
+    });
   });
 
   describe('DELETE /appointments/:uuid', () => {
