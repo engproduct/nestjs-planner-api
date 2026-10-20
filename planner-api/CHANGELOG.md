@@ -4,6 +4,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.15.0] - 2026-10-20
+
+Fatia Appointment 3/4 (#27, parte de #24): consulta e listagem de agendamentos (R4, leitura).
+
+### Adicionado
+
+- `GET /appointments/:uuid` → 200 com o mesmo formato do `POST`; inexistente ou excluído → 404; uuid malformado → 400.
+- `GET /appointments` paginado (`{ data, meta: { page, limit, total } }`, como em Patient), sem agendamentos excluídos, ordenado por `startTime` e, em empate, por `id` (paginação estável). Agendamentos de paciente ou médico excluído depois continuam visíveis (R10).
+- Decorators de Swagger do `AppointmentResponseDto` (adiados da #26) e respostas 200/paginada/400/404 documentadas.
+- e2e de leitura do R4 em `test/appointments.e2e-spec.ts` e do schema de Appointment em `test/swagger.e2e-spec.ts`.
+- `docs/domain.md`: limitação consciente de tempo (instante em UTC, sem fuso IANA da clínica).
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.15.0.
+
 ## [0.14.0] - 2026-10-20
 
 Fatia Appointment 2/4 (#26, parte de #24): cadastro de agendamentos, `POST /appointments` (R3, I1–I3). Os decorators de Swagger do `AppointmentResponseDto` ficam para o 3/4 (#27), pelo corte de reserva do limite de 500 linhas.
@@ -220,6 +236,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.15.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.11.0...v0.12.0
