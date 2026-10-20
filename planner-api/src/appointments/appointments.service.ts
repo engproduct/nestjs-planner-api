@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   appointmentInclude,
@@ -30,7 +31,7 @@ export class AppointmentsService {
       this.prisma.user.findFirst({
         where: {
           uuid: appointment.doctorUuid,
-          role: 'DOCTOR',
+          role: Role.DOCTOR,
           deletedAt: null,
         },
         select: { id: true },

@@ -10,9 +10,9 @@ Fatia Appointment 2/4 (#26, parte de #24): cadastro de agendamentos, `POST /appo
 
 ### Adicionado
 
-- `model Appointment` (`uuid` gerado pela aplicação, FKs `patientId`/`userId`, `startTime`/`endTime` em `Timestamptz(3)`, `description`, `deletedAt`, índice `(userId, startTime)`), com a migration `create_appointment`.
+- `model Appointment` (`uuid` gerado pela aplicação, FKs `patientId`/`userId`, `startTime`/`endTime` em `Timestamptz(3)`, `description`, `deletedAt`, índice `(userId, startTime)`), com a migration `create_appointment`; a migration `appointment_time_range_check` (SQL manual) garante I1 também no banco com `CHECK ("startTime" < "endTime")`.
 - Domínio em `src/appointments/domain/`: VO `TimeRange` (I1, `start < end`) e entidade `Appointment` (`schedule`, `description` com trim e de 1 a 1000 caracteres), com testes unitários.
-- Validador `IsIsoDateTimeWithOffset` (`src/common/validation/`): ISO 8601 com offset obrigatório (`Z` ou `±hh:mm`), recusando data sem offset, só a data e datas de calendário impossíveis.
+- Validador `IsIsoDateTimeWithOffset` (`src/common/validation/`): ISO 8601 com offset obrigatório (`Z` ou `±hh:mm`), recusando data sem offset, só a data e datas de calendário impossíveis, com teste unitário.
 - `POST /appointments` → 201: paciente inexistente ou excluído → 404 (I2); médico inexistente, excluído ou sem `role = DOCTOR` → 404 (I3). A resposta traz `patientUuid`/`doctorUuid` e as datas em UTC, sem ids internos.
 - e2e de R3 em `test/appointments.e2e-spec.ts`.
 
