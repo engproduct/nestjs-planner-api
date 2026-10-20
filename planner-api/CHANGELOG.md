@@ -4,6 +4,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.14.0] - 2026-10-20
+
+Fatia Appointment 2/4 (#26, parte de #24): cadastro de agendamentos, `POST /appointments` (R3, I1–I3). Os decorators de Swagger do `AppointmentResponseDto` ficam para o 3/4 (#27), pelo corte de reserva do limite de 500 linhas.
+
+### Adicionado
+
+- `model Appointment` (`uuid` gerado pela aplicação, FKs `patientId`/`userId`, `startTime`/`endTime` em `Timestamptz(3)`, `description`, `deletedAt`, índice `(userId, startTime)`), com a migration `create_appointment`; a migration `appointment_time_range_check` (SQL manual) garante I1 também no banco com `CHECK ("startTime" < "endTime")`.
+- Domínio em `src/appointments/domain/`: VO `TimeRange` (I1, `start < end`) e entidade `Appointment` (`schedule`, `description` com trim e de 1 a 1000 caracteres), com testes unitários.
+- Validador `IsIsoDateTimeWithOffset` (`src/common/validation/`): ISO 8601 com offset obrigatório (`Z` ou `±hh:mm`), recusando data sem offset, só a data e datas de calendário impossíveis, com teste unitário.
+- `POST /appointments` → 201: paciente inexistente ou excluído → 404 (I2); médico inexistente, excluído ou sem `role = DOCTOR` → 404 (I3). A resposta traz `patientUuid`/`doctorUuid` e as datas em UTC, sem ids internos.
+- e2e de R3 em `test/appointments.e2e-spec.ts`.
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.14.0.
+
 ## [0.13.0] - 2026-10-20
 
 Fatia Appointment 1/4 (#25, parte de #24): pré-requisito `User`/`Role` e seed. Nenhuma regra R* é entregue de ponta a ponta nesta versão.
@@ -204,6 +220,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.14.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.10.0...v0.11.0

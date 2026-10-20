@@ -38,6 +38,8 @@ model Patient {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  appointments Appointment[]
+
   // O índice único parcial de email (WHERE "deletedAt" IS NULL) vive só na
   // migration patient_email_active_unique: o Prisma 7.10 não o modela no schema.
   @@map("patients")
@@ -53,5 +55,28 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
+  appointments Appointment[]
+
   @@map("users")
+}
+
+model Appointment {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @db.Uuid // gerado pela aplicação (sem default no banco)
+  patientId   Int
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  userId      Int // médico: User com role = DOCTOR (validado na aplicação)
+  user        User      @relation(fields: [userId], references: [id])
+  // Timestamptz: o instante é guardado sem depender do fuso da sessão.
+  startTime   DateTime  @db.Timestamptz(3)
+  endTime     DateTime  @db.Timestamptz(3)
+  description String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // O CHECK de I1 (startTime < endTime) vive só na migration
+  // appointment_time_range_check: o Prisma 7.10 não o modela no schema.
+  @@index([userId, startTime])
+  @@map("appointments")
 }

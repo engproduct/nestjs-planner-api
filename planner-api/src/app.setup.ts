@@ -25,7 +25,7 @@ export function configureApp(app: INestApplication): void {
         .setDescription(
           'Prontuário eletrônico: pacientes, agendamentos e observações',
         )
-        .setVersion('0.13.0')
+        .setVersion('0.14.0')
         .build(),
     );
     SwaggerModule.setup('docs', app, document);
