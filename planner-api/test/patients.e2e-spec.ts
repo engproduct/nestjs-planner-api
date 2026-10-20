@@ -349,6 +349,37 @@ describe('Patients (e2e)', () => {
       return api(app).patch('/patients/not-a-uuid').send({}).expect(400);
     });
 
+    it('R2: returns 404 when the patient is deleted between read and write', async () => {
+      const { uuid } = await createOne();
+      const prisma = app.get(PrismaService);
+      const delegate = prisma.patient;
+      const findFirst = delegate.findFirst.bind(delegate);
+      // Simula um DELETE concorrente: exclui a linha logo após a leitura do PATCH.
+      const spy = vi
+        .spyOn(delegate, 'findFirst')
+        .mockImplementationOnce((async (args: unknown) => {
+          const found = await findFirst(args as never);
+          await prisma.patient.updateMany({
+            where: { uuid },
+            data: { deletedAt: new Date() },
+          });
+          return found;
+        }) as never);
+
+      try {
+        await api(app)
+          .patch(`/patients/${uuid}`)
+          .send({ name: 'Maria Souza' })
+          .expect(404);
+      } finally {
+        spy.mockRestore();
+      }
+
+      const row = await prisma.patient.findUniqueOrThrow({ where: { uuid } });
+      expect(row.name).toBe(validPatient.name);
+      expect(row.deletedAt).toBeInstanceOf(Date);
+    });
+
     it('R1: returns 409 when the email belongs to another active patient', async () => {
       await createOne('a@example.com');
       const { uuid } = await createOne('b@example.com');

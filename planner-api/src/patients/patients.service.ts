@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
 import { Paginated, paginated } from '../common/pagination/paginated.js';
-import { isUniqueViolation } from '../prisma/prisma-errors.js';
+import { isNotFound, isUniqueViolation } from '../prisma/prisma-errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePatientDto } from './dto/create-patient.dto.js';
 import { UpdatePatientDto } from './dto/update-patient.dto.js';
@@ -83,8 +83,10 @@ export class PatientsService {
       throw new NotFoundException('Patient not found');
     }
     try {
+      // deletedAt: null na gravação: um DELETE entre a leitura e a escrita
+      // vira P2025 (404) em vez de editar um registro excluído.
       const patient = await this.prisma.patient.update({
-        where: { id: current.id },
+        where: { id: current.id, deletedAt: null },
         data: {
           name: dto.name,
           phone: dto.phone,
@@ -99,6 +101,9 @@ export class PatientsService {
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException('Email already registered');
+      }
+      if (isNotFound(error)) {
+        throw new NotFoundException('Patient not found');
       }
       throw error;
     }

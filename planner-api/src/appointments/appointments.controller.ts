@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -69,6 +70,10 @@ export class AppointmentsController {
   @ApiNotFoundResponse({
     description:
       'Agendamento inexistente ou excluído; ou médico inexistente, excluído ou sem role DOCTOR',
+  })
+  @ApiConflictResponse({
+    description:
+      'Paciente excluído ou médico atual excluído/sem role DOCTOR: histórico só leitura',
   })
   update(
     @Param('uuid', ParseUUIDPipe) uuid: string,

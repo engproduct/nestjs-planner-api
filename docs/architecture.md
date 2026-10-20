@@ -116,7 +116,7 @@ flowchart TB
     prisma --> db
 ```
 
-* **Controllers:** HTTP, status codes, delegação; sem regra de negócio pesada. Conflitos (409): agenda (R9) e email de paciente duplicado entre ativos.
+* **Controllers:** HTTP, status codes, delegação; sem regra de negócio pesada. Conflitos (409): agenda (R9), email de paciente duplicado entre ativos e `PATCH` em agendamento de paciente ou médico inativo (histórico só leitura).
 
 * **DTOs + ValidationPipe:** formato e presença de campos (NFR validação).
 
