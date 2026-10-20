@@ -16,6 +16,7 @@ Se uma tarefa conflitar com esses documentos, **pare e pergunte** em vez de inve
 
 - Node fixado em [.nvmrc](.nvmrc). **Sempre** rode `nvm use` na raiz antes de qualquer comando: o Node padrão do shell pode ser antigo e quebra lint/testes com erros de sintaxe.
 - Toda aplicação vive em `planner-api/`; rode os comandos `yarn` a partir de lá.
+- `yarn install` ativa os hooks (`.githooks/`): pre-commit roda lint, pre-push roda lint + unit + e2e (precisa do Postgres de teste). Não use `--no-verify`.
 - Gerenciador de pacotes: **yarn** (v1, `yarn.lock`). Não use npm/pnpm.
 - Postgres: `docker compose up -d` na raiz sobe dev (`:5432`) e teste (`:5433`).
 - Variáveis: `planner-api/.env.example` → `.env` (dev) e `.env.test.example` → `.env.test` (testes). Nunca commitar `.env`/`.env.test`.
@@ -88,7 +89,7 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 
 ## Estado atual
 
-Fundação técnica pronta. Patient pronta (R1, R2); próxima: Appointment (#24).
+Fundação técnica pronta. Patient pronta (R1, R2); próxima: Appointment (#24). A `main` está protegida (PR + 3 checks de CI obrigatórios).
 
 - Config: `@nestjs/config` + zod em `planner-api/src/config/` (injete `ConfigService<Env, true>`).
 - Prisma 7: schema em `planner-api/prisma/schema.prisma`; client gerado em `src/generated/prisma` (importe de `../generated/prisma/client.js`); `PrismaService` global. Após mudar o schema: `yarn prisma migrate dev --name <nome>` (dev) — os e2e aplicam migrations no banco de teste sozinhos.

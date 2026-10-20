@@ -106,13 +106,13 @@ Status em relação ao snapshot de 2026-10-01 (numeração preservada):
 
 | # | Lacuna | Status | Situação atual / sugestão |
 | --- | --- | --- | --- |
-| 1 | Sem CI de qualidade | ✅ Resolvida | `ci.yml` roda lint, unit e e2e em todo PR. Falta confirmar na proteção de branch do GitHub se é check obrigatório (não verificável pelo repositório) |
-| 2 | Sem `.claude/settings.json` (permissões, hooks) | ❌ Aberta | Hooks `PostToolUse` (format/lint no arquivo editado) e `Stop` (rodar testes); allowlist de `yarn`/`git` de leitura |
+| 1 | Sem CI de qualidade | ✅ Resolvida | `ci.yml` roda lint, unit e e2e em todo PR e os 3 checks são obrigatórios na proteção da `main` (admin pode contornar) |
+| 2 | Sem `.claude/settings.json` (permissões, hooks) | 🟡 Parcial | `.claude/settings.json` existe só com `deny` (`--no-verify`, `core.hooksPath`). Faltam hooks do agente: `PostToolUse` (format/lint no arquivo editado) e `Stop` (rodar testes); allowlist de `yarn`/`git` de leitura |
 | 3 | Sem skills/comandos ou subagentes | ❌ Aberta | Skill `/slice <issue>` que guia Spec→Red→Green→Verify; subagente revisor que confere R*/I* e convenções |
 | 4 | Testes são do scaffold | ✅ Resolvida para Patient | 39 unit + 66 e2e, estes com nomes por regra. Cada nova fatia deve repetir o padrão |
 | 5 | Fundação ausente | ✅ Resolvida | Config, Prisma, `ValidationPipe`, Swagger e e2e com banco entregues |
 | 6 | Regras só em texto | 🟡 Parcial | `main.ts` não lê mais `process.env`. Restam `prisma.config.ts` e `test/global-setup.ts` (legítimos: CLI e teste), em tensão com a frase do CLAUDE.md "nenhum código lê `process.env` fora do módulo de configuração". O [.oxlintrc.json](../planner-api/.oxlintrc.json) só tem 2 regras: falta `no-process-env` com exceções declaradas |
-| 7 | Sem pre-commit | ❌ Aberta | `lefthook`/`husky` + `lint-staged`, ou hook do agente |
+| 7 | Sem pre-commit | ✅ Resolvida | `.githooks/`: `pre-commit` roda lint e `pre-push` roda lint + unit + e2e, ativados por `prepare` (`core.hooksPath`) |
 | 8 | Sem métricas | 🟡 Parcial | `test:cov` e `@vitest/coverage-v8` existem, mas sem threshold e fora do CI |
 | 9 | Pequenas inconsistências nos docs | 🟡 Parcial | [domain.md](./domain.md#mapeamento-prd--fatias-verticais-ordem-sugerida) ainda cita "integration tests" sem config própria; [.env.test.example](../planner-api/.env.test.example) não tem `PORT`; política LGPD (R10) segue rascunho (agora com o placeholder de email anonimizado registrado) |
 | 10 | Node não fixado de fato | 🟡 Parcial | O CI já usa `node-version-file: .nvmrc`; `engines` continua faixa `>=24.21.0 <25` e o [README](../README.md) ainda diz "fixado ... em `engines`" |
