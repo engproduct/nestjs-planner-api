@@ -78,14 +78,17 @@ Alterações de perfil não alteram agendamentos passados; a identidade do pacie
 
 | Campo                | Regra                                                                                |
 | -------------------- | ------------------------------------------------------------------------------------ |
-| name, surname, email | Dados de identificação do usuário                                                    |
-| passwordHash         | Credencial armazenada como hash; nunca armazenar senha em texto puro                 |
-| role                 | Define o papel/autorização do usuário; no contexto atual, `DOCTOR` representa médico |
+| email                | Identificação do usuário; único. Nome fica fora até uma fatia precisar dele          |
+| uuid                 | Identidade gerada pela aplicação (UUID v4); sem default no banco; imutável           |
+| email                | Único                                                                                |
+| passwordHash         | Credencial armazenada como hash; nunca armazenar senha em texto puro. **Opcional até a fatia Auth (#30)**, que decide se passa a ser obrigatório |
+| role                 | `DOCTOR` (médico) ou `ADMIN` (papel não clínico, sem agenda); define o papel/autorização |
 | deletedAt            | Soft delete                                                                          |
 
 **Comportamentos:**
 
-* Cadastro/gestão mínima de usuários
+* Cadastro/gestão mínima de usuários: sem CRUD nem endpoint nesta fase; os usuários vêm do seed de desenvolvimento (`prisma/seed.ts`, um `DOCTOR` com uuid fixo) ou de `createUser` nos e2e
+* Não existe `GET /doctors`: o `doctorUuid` usado ao agendar vem do seed
 * Vinculação de agendamentos ao usuário responsável
 * Autenticação/JWT fora do slice inicial, salvo issue específica de auth
 * Autorização baseada em `role` quando autenticação estiver implementada
@@ -110,7 +113,7 @@ O `Appointment` representa o vínculo entre um paciente e um médico em determin
 | patientId          | Deve referenciar paciente existente e não excluído                    |
 | userId             | Deve referenciar `User` existente, não excluído e com `role = DOCTOR` |
 | startTime, endTime | Intervalo válido: `startTime < endTime`                               |
-| description        | Contexto/motivo do agendamento                                        |
+| description        | Contexto/motivo do agendamento; trim, de 1 a 1000 caracteres          |
 | deletedAt          | Soft delete; exclusão lógica do agendamento                           |
 
 **Relacionamentos:**
@@ -130,6 +133,15 @@ O `Appointment` representa o vínculo entre um paciente e um médico em determin
 **Referências:**
 
 O agregado referencia `Patient` e `User` por identidade. A camada de aplicação valida a existência e o estado dos agregados referenciados antes de persistir o agendamento.
+
+**Decisões de Spec (fatia Appointment, #24):**
+
+* **Tempo:** `startTime`/`endTime` em ISO 8601 com offset obrigatório (`Z` ou `±hh:mm`); sem offset ou só a data → 400. Colunas `@db.Timestamptz(3)`; a resposta sai sempre em UTC (`toISOString()`).
+* **Intervalo:** I1 garantida pelo VO `TimeRange` (`DomainError` → 400); `start == end` também é 400. Agendamento no passado é permitido (registro de consultas realizadas); sem duração máxima.
+* **Referências:** paciente inexistente/excluído ou médico inexistente/excluído/`ADMIN` → 404, ao criar e ao trocar o médico. Se o paciente ou o médico for excluído depois, o agendamento continua visível (histórico, R10).
+* **PATCH:** edita `startTime`, `endTime`, `description` e `doctorUuid`; `patientUuid` é imutável (400). O intervalo é validado com os valores combinados (atuais + novos).
+* **DELETE:** soft delete → 204; inexistente ou já excluído → 404; **409 se houver `Observation` ativa** (implementado na fatia Observation).
+* **Listagem:** paginada como a de Patient, ordenada por `startTime` e, em empate, por `id`; sem filtros nesta fatia (a Auth restringirá ao médico logado).
 
 ---
 
