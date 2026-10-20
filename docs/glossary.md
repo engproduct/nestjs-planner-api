@@ -118,6 +118,14 @@ DOCTOR
 
 Um `Appointment` possui um `userId` que referencia o usuário responsável. A camada de aplicação deve garantir que esse usuário possua o papel `DOCTOR`.
 
+### Papel (`Role`: `DOCTOR` | `ADMIN`)
+
+Enum do campo `role` do `User`. `DOCTOR` é o médico, que pode ter agenda. `ADMIN` é um papel não clínico e não pode ser o médico de um agendamento.
+
+### Seed
+
+Script de desenvolvimento (`prisma/seed.ts`, executado por `yarn prisma db seed`) que cria, de forma idempotente, um `User` `DOCTOR` com uuid fixo e imprime o uuid. É a origem do `doctorUuid` enquanto não há endpoint de usuários. Não é usado em staging nem em produção.
+
 ### Credencial (`passwordHash`)
 
 Valor derivado da senha do usuário por algoritmo apropriado de hashing.
@@ -201,7 +209,7 @@ Incremento fino que entrega um fluxo completo (ex.: criar paciente via API + per
 | Consulta    | — (via `Appointment`)      | Observação                 |
 | Observação  | `Observation`              | Appointment                |
 | Anotação    | `Observation`              | Appointment                |
-| Papel       | `role`                     | User, Autorização          |
+| Papel       | `role` (`Role`)            | User, Autorização          |
 | Credencial  | `passwordHash`             | User, Autenticação         |
 
 ---
