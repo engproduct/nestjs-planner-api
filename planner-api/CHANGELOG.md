@@ -4,6 +4,23 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.16.0] - 2026-10-20
+
+Fatia Appointment 4/4 (#28, conclui #24): edição e exclusão de agendamentos (R4).
+
+### Adicionado
+
+- `PATCH /appointments/:uuid` → 200 com o agendamento atualizado. Edita `startTime`, `endTime`, `description` e `doctorUuid`; o intervalo é validado com os valores combinados (atuais + novos, I1 → 400). `patientUuid` é imutável (no corpo → 400), `null` em qualquer campo → 400 e data sem offset → 400. Trocar o médico revalida I3 (inexistente, excluído ou `ADMIN` → 404). Agendamento inexistente ou excluído → 404; corpo vazio não altera nada e responde 200, como em `PATCH /patients/:uuid`.
+- `DELETE /appointments/:uuid` → 204 (soft delete via `deletedAt`); inexistente ou já excluído → 404. O 409 com `Observation` ativa entra na fatia Observation.
+- Entidade `Appointment`: `restore()`, `reschedule()` e `changeDescription()` (imutável, devolve nova instância), com testes unitários.
+- `UpdateAppointmentDto` (`PartialType(PickType(...))`, `null` rejeitado).
+- e2e de edição e exclusão do R4 em `test/appointments.e2e-spec.ts`.
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.16.0.
+- `CLAUDE.md` › Estado atual: Appointment pronta; próxima fatia é Observation.
+
 ## [0.15.0] - 2026-10-20
 
 Fatia Appointment 3/4 (#27, parte de #24): consulta e listagem de agendamentos (R4, leitura).
@@ -240,6 +257,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.16.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.12.0...v0.13.0
