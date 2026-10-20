@@ -4,6 +4,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.13.0] - 2026-10-20
+
+Fatia Appointment 1/4 (#25, parte de #24): pré-requisito `User`/`Role` e seed. Nenhuma regra R* é entregue de ponta a ponta nesta versão.
+
+### Adicionado
+
+- `enum Role { DOCTOR, ADMIN }` e `model User` (`uuid` gerado pela aplicação, `email` único, `passwordHash` opcional até a Auth #30, `deletedAt`), com a migration `create_user`.
+- `test/utils/users.ts` com `createUser(app, { role, deletedAt, email? })` e e2e de persistência.
+- `prisma/seed.ts` (só dev, idempotente, executado por `yarn prisma db seed`): upsert de um `DOCTOR` com uuid fixo que imprime o `doctorUuid`; registrado em `prisma.config.ts`.
+- `tsx` como devDependency, runner do seed.
+- `docs/domain.md` e `docs/glossary.md`: ADMIN, `passwordHash` opcional e as decisões de Spec de Appointment (offset obrigatório, `Timestamptz`, UTC, PATCH, 409 com observações ativas).
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.13.0.
+
 ## [0.12.0] - 2026-10-20
 
 Ajuste do deny de `--no-verify` entregue em #39 (#41). O teste numa sessão nova do Claude Code mostrou que `git -C <dir> commit --no-verify` passava, porque os padrões só casavam com o subcomando logo após `git`.
@@ -188,6 +204,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.13.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.9.0...v0.10.0
