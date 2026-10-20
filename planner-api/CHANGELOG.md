@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.11.0] - 2026-10-20
+
+Portões de verificação determinísticos (#39): hooks locais, deny de `--no-verify` ao Claude Code e proteção da `main`. Resolve as lacunas 1, 2 (parcial) e 7 de `docs/harness-assessment.md`.
+
+### Adicionado
+
+- Git hooks em `.githooks/`, ativados por `yarn install` (script `prepare` define `core.hooksPath`): `pre-commit` roda `yarn lint`; `pre-push` roda lint + unit + e2e, avisa se o Postgres de teste estiver fora do ar e não roda em `git push --delete`.
+- `.claude/settings.json` com `deny` para `--no-verify` em `git commit`/`git push`, `git commit -n` e override de `core.hooksPath`; `.gitignore` na raiz com `.claude/settings.local.json`.
+- Proteção da `main` no GitHub (PR obrigatório e os 3 checks de CI; admin pode contornar), aplicada fora do código.
+
+### Alterado
+
+- `CLAUDE.md`, `README.md`, `docs/architecture.md` e `docs/harness-assessment.md` descrevem as camadas de verificação.
+- `version` do `package.json` e do Swagger para 0.11.0.
+
 ## [0.10.0] - 2026-10-12
 
 Erro de domínio sem acoplamento a HTTP (#37, parte de #6). Ajuste da fatia Patient apontado em review: regra pura lançava `BadRequestException` e o 400 de data futura tinha formato diferente dos erros de validação.
@@ -159,6 +174,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.11.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.7.0...v0.8.0

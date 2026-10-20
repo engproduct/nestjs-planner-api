@@ -69,3 +69,5 @@ $ yarn lint
 $ yarn test
 $ yarn test:e2e
 ```
+
+O `yarn install` ativa os git hooks de [`.githooks/`](./.githooks): o `pre-commit` roda `yarn lint` e o `pre-push` roda lint + unit + e2e (precisa do Postgres de teste no ar). Não use `--no-verify`. A `main` é protegida: só recebe PR com os checks de CI verdes.

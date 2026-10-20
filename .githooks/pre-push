@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# pre-push: lint + unit + e2e (precisa do Postgres de teste).
+set -e
+. "$(dirname "$0")/lib.sh"
+
+# Só deleção de refs (sha local 0000...): não roda a suíte.
+only_delete=1
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  case "$local_sha" in
+    *[!0]*) only_delete=0 ;;
+  esac
+done
+[ "$only_delete" = 1 ] && exit 0
+
+use_node
+cd_app
+
+host=localhost
+port=5433
+if [ -f .env.test ]; then
+  h="$(sed -n 's/^DB_HOST=//p' .env.test | head -n1 | tr -d '\r"')"
+  p="$(sed -n 's/^DB_PORT=//p' .env.test | head -n1 | tr -d '\r"')"
+  host="${h:-$host}"
+  port="${p:-$port}"
+fi
+if ! timeout 2 bash -c "exec 3<>/dev/tcp/$host/$port" 2>/dev/null; then
+  echo "Banco de teste fora do ar ($host:$port): rode 'docker compose up -d' na raiz." >&2
+  exit 1
+fi
+
+yarn lint && yarn test && yarn test:e2e
