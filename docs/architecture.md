@@ -57,7 +57,7 @@ flowchart LR
 4. **Verificação:** comandos repetíveis documentados no README; agente e humano usam os mesmos. Os portões são determinísticos e em camadas:
    - **Hooks locais** (`.githooks/`, ativados por `yarn install`): o `pre-commit` roda só `yarn lint`; o `pre-push` roda lint + unit + e2e (exige o Postgres de teste) e é ignorado em `git push --delete`. O `pre-commit` não roda testes porque os commits de Red do TDD falham de propósito.
    - **CI obrigatório na `main`:** a proteção da branch exige PR e os checks "Lint, unit e e2e", "Validate PR description" e "Require CHANGELOG and version bump". O admin do repositório pode contornar (`enforce_admins=false`).
-   - **Claude Code:** `.claude/settings.json` nega `--no-verify` e o override de `core.hooksPath`.
+   - **Claude Code:** `.claude/settings.json` nega `--no-verify` e `git commit -n` (inclusive com opções globais entre `git` e o subcomando, como `git -C <dir> commit`) e qualquer comando que cite `core.hooksPath`. O `deny` casa padrões de texto e serve para evitar acidentes, não como barreira: a garantia é o CI obrigatório na `main`.
 
 5. **Documentação:** se a decisão afeta domínio ou stack, atualizar `docs/` no mesmo PR.
 

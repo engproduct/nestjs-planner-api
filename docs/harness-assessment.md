@@ -107,7 +107,7 @@ Status em relação ao snapshot de 2026-10-01 (numeração preservada):
 | # | Lacuna | Status | Situação atual / sugestão |
 | --- | --- | --- | --- |
 | 1 | Sem CI de qualidade | ✅ Resolvida | `ci.yml` roda lint, unit e e2e em todo PR e os 3 checks são obrigatórios na proteção da `main` (admin pode contornar) |
-| 2 | Sem `.claude/settings.json` (permissões, hooks) | 🟡 Parcial | `.claude/settings.json` existe só com `deny` (`--no-verify`, `core.hooksPath`). Faltam hooks do agente: `PostToolUse` (format/lint no arquivo editado) e `Stop` (rodar testes); allowlist de `yarn`/`git` de leitura |
+| 2 | Sem `.claude/settings.json` (permissões, hooks) | 🟡 Parcial | `.claude/settings.json` existe só com `deny` (`--no-verify`, `git commit -n` e `core.hooksPath`, também com opções globais como `git -C`). Faltam hooks do agente: `PostToolUse` (format/lint no arquivo editado) e `Stop` (rodar testes); allowlist de `yarn`/`git` de leitura |
 | 3 | Sem skills/comandos ou subagentes | ❌ Aberta | Skill `/slice <issue>` que guia Spec→Red→Green→Verify; subagente revisor que confere R*/I* e convenções |
 | 4 | Testes são do scaffold | ✅ Resolvida para Patient | 39 unit + 66 e2e, estes com nomes por regra. Cada nova fatia deve repetir o padrão |
 | 5 | Fundação ausente | ✅ Resolvida | Config, Prisma, `ValidationPipe`, Swagger e e2e com banco entregues |

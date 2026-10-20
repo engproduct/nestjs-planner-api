@@ -5,7 +5,11 @@
       "Bash(git push*--no-verify*)",
       "Bash(git commit -n*)",
       "Bash(git commit * -n*)",
-      "Bash(*core.hooksPath=*)"
+      "Bash(git * commit*--no-verify*)",
+      "Bash(git * push*--no-verify*)",
+      "Bash(git * commit -n*)",
+      "Bash(git * commit * -n*)",
+      "Bash(*core.hooksPath*)"
     ]
   }
 }

@@ -4,6 +4,20 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.12.0] - 2026-10-20
+
+Ajuste do deny de `--no-verify` entregue em #39 (#41). O teste numa sessão nova do Claude Code mostrou que `git -C <dir> commit --no-verify` passava, porque os padrões só casavam com o subcomando logo após `git`.
+
+### Corrigido
+
+- `.claude/settings.json` nega `--no-verify` e `git commit -n` também com opções globais entre `git` e o subcomando (`-C`, `-c`, `--git-dir`).
+- O padrão `*core.hooksPath=*` vira `*core.hooksPath*` e passa a cobrir `git config core.hooksPath <valor>` e `GIT_CONFIG_KEY_0=core.hooksPath`. Efeito colateral: comandos de leitura que citem `core.hooksPath` (ex.: `git config --get core.hooksPath`) também são negados ao agente.
+
+### Alterado
+
+- `docs/architecture.md` e `docs/harness-assessment.md` descrevem a cobertura do `deny` e registram que ele evita acidentes; a garantia é o CI obrigatório na `main`.
+- `version` do `package.json` e do Swagger para 0.12.0.
+
 ## [0.11.0] - 2026-10-20
 
 Portões de verificação determinísticos (#39): hooks locais, deny de `--no-verify` ao Claude Code e proteção da `main`. Resolve as lacunas 1, 2 (parcial) e 7 de `docs/harness-assessment.md`.
@@ -174,6 +188,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.12.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.8.0...v0.9.0
