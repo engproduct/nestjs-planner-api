@@ -11,7 +11,7 @@ Portões de verificação determinísticos (#39): hooks locais, deny de `--no-ve
 ### Adicionado
 
 - Git hooks em `.githooks/`, ativados por `yarn install` (script `prepare` define `core.hooksPath`): `pre-commit` roda `yarn lint`; `pre-push` roda lint + unit + e2e, avisa se o Postgres de teste estiver fora do ar e não roda em `git push --delete`.
-- `.claude/settings.json` com `deny` para `--no-verify`, `git commit -n` e override de `core.hooksPath`; `.gitignore` na raiz com `.claude/settings.local.json`.
+- `.claude/settings.json` com `deny` para `--no-verify` em `git commit`/`git push`, `git commit -n` e override de `core.hooksPath`; `.gitignore` na raiz com `.claude/settings.local.json`.
 - Proteção da `main` no GitHub (PR obrigatório e os 3 checks de CI; admin pode contornar), aplicada fora do código.
 
 ### Alterado
