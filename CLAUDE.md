@@ -84,7 +84,7 @@ Pull requests seguem obrigatoriamente [.github/pull_request_template.md](.github
 - `User` com `role = DOCTOR` representa o médico — não criar entidade `Doctor`.
 - `Observation` referencia apenas `appointmentId` (nunca `patientId`/`userId` diretamente).
 - Senhas só como `passwordHash`.
-- Códigos HTTP: 201 criação, 400 validação, 404 referência inexistente, 409 conflito (agenda, R9; email de paciente duplicado).
+- Códigos HTTP: 201 criação, 400 validação, 404 referência inexistente, 409 conflito (agenda, R9; email de paciente duplicado; `PATCH` em agendamento de paciente ou médico inativo).
 - Testes ficam ao lado do código (`*.spec.ts`); e2e em `planner-api/test/` (`*.e2e-spec.ts`). Use o banco de teste (`:5433`), nunca o de dev.
 
 ## Estado atual
