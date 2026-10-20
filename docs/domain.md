@@ -78,7 +78,7 @@ Alterações de perfil não alteram agendamentos passados; a identidade do pacie
 
 | Campo                | Regra                                                                                |
 | -------------------- | ------------------------------------------------------------------------------------ |
-| name, surname, email | Dados de identificação do usuário                                                    |
+| email                | Identificação do usuário; único. Nome fica fora até uma fatia precisar dele          |
 | uuid                 | Identidade gerada pela aplicação (UUID v4); sem default no banco; imutável           |
 | email                | Único                                                                                |
 | passwordHash         | Credencial armazenada como hash; nunca armazenar senha em texto puro. **Opcional até a fatia Auth (#30)**, que decide se passa a ser obrigatório |

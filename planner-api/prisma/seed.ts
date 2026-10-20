@@ -18,9 +18,11 @@ const prisma = new PrismaClient({
 });
 
 try {
+  // Chave pelo uuid fixo; o update restaura o médico se ele foi alterado ou
+  // excluído no banco de dev, para o uuid impresso sempre ser de um DOCTOR ativo.
   const doctor = await prisma.user.upsert({
-    where: { email: DOCTOR_EMAIL },
-    update: { deletedAt: null },
+    where: { uuid: DOCTOR_UUID },
+    update: { email: DOCTOR_EMAIL, role: 'DOCTOR', deletedAt: null },
     create: { uuid: DOCTOR_UUID, email: DOCTOR_EMAIL, role: 'DOCTOR' },
   });
   console.log(`doctorUuid: ${doctor.uuid}`);

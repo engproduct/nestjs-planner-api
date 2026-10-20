@@ -25,7 +25,6 @@ describe('Users (persistência)', () => {
     const admin = await createUser(app, { role: 'ADMIN' });
 
     expect(doctor.uuid).not.toBe(admin.uuid);
-    expect(doctor.email).not.toBe(admin.email);
 
     const rows = await app.get(PrismaService).user.findMany({
       orderBy: { id: 'asc' },
@@ -39,5 +38,13 @@ describe('Users (persistência)', () => {
     const user = await createUser(app, { role: 'DOCTOR', deletedAt });
 
     expect(user.deletedAt).toEqual(deletedAt);
+  });
+
+  it('o banco recusa email duplicado', async () => {
+    await createUser(app, { role: 'DOCTOR', email: 'dup@example.com' });
+
+    await expect(
+      createUser(app, { role: 'ADMIN', email: 'dup@example.com' }),
+    ).rejects.toMatchObject({ code: 'P2002' });
   });
 });
