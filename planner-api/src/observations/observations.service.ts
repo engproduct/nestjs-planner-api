@@ -28,9 +28,9 @@ export class ObservationsService {
     });
 
     return this.prisma.$transaction(async (tx) => {
-      // Trava a linha do agendamento até o fim da transação: o DELETE de
-      // agendamento usa o mesmo lock, então ele não é excluído enquanto a
-      // observação é criada (I4), nem o inverso.
+      // Trava a linha do agendamento até o fim da transação. O DELETE de
+      // agendamento passará a usar o mesmo lock (fatia 3/4, #52); então ele
+      // não exclui o agendamento enquanto a observação é criada (I4).
       const locked = await tx.$queryRaw<{ id: number }[]>`
         SELECT id FROM appointments
         WHERE uuid = ${appointmentUuid}::uuid AND "deletedAt" IS NULL

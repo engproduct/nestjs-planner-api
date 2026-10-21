@@ -149,5 +149,14 @@ describe('Observations (e2e)', () => {
 
       await post({ message: 'x' }).expect(409);
     });
+
+    it('returns 409 when the appointment doctor is not a DOCTOR anymore', async () => {
+      await app.get(PrismaService).user.update({
+        where: { uuid: doctorUuid },
+        data: { role: 'ADMIN' },
+      });
+
+      await post({ message: 'x' }).expect(409);
+    });
   });
 });
