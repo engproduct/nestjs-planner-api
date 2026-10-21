@@ -17,8 +17,14 @@ Fatia Observation 1/4 (#50, parte de #49): registro de observação (R5).
 - e2e do R5 em `test/observations.e2e-spec.ts`.
 - `docs/domain.md`: decisões da fatia Observation (rotas, `message`, 409 de histórico só leitura, lock, `DELETE`, leituras R7/R8).
 
+### Corrigido
+
+- SQL cru respeita `DB_SCHEMA`: o `PrismaService` fixa o `search_path` da conexão (`options: -c search_path=<schema>`), pois o `schema` do `PrismaPg` só qualifica o SQL gerado pelo Prisma. Antes, com schema diferente de `public`, o `FOR UPDATE` do registro retornava 404 ou podia travar o agendamento errado. `DB_SCHEMA` passa a ser validado no boot como identificador simples (`/^[A-Za-z_][A-Za-z0-9_]*$/`).
+- `message` com byte NUL (`\u0000`) → 400 (DTO e entidade), em vez de 500 do Postgres.
+
 ### Alterado
 
+- Os e2e e o CI passam a usar o schema `planner_test` (antes `public`), para que SQL cru sem schema falhe nos testes.
 - `version` do `package.json` e do Swagger para 0.18.0.
 
 ## [0.17.0] - 2026-10-20

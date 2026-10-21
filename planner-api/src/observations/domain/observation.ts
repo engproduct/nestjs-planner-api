@@ -65,5 +65,9 @@ function normalizeMessage(message: string): string {
       `message must have between 1 and ${MESSAGE_MAX_LENGTH} characters`,
     );
   }
+  // O Postgres não aceita NUL em texto (UTF8).
+  if (trimmed.includes('\u0000')) {
+    throw new DomainError('message must not contain NUL characters');
+  }
   return trimmed;
 }
