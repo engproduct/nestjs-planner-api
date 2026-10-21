@@ -4,6 +4,24 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.20.0] - 2026-10-21
+
+Fatia Observation 3/4 (#52, parte de #49): edição e exclusão de observação (R6).
+
+### Adicionado
+
+- `PATCH /observations/:uuid` → 200 com a observação atualizada; edita só `message` (trim, 1 a 5000 caracteres, sem NUL) e avança `updatedAt`. Ordem das checagens: observação inexistente ou excluída → 404; paciente do agendamento excluído, ou médico excluído ou sem `role = DOCTOR` → 409 (histórico só leitura); regra de `message` → 400. Ausente, não string, campo extra ou `appointmentUuid` → 400; uuid malformado → 400. A gravação usa `deletedAt: null`: exclusão concorrente → 404.
+- `DELETE /observations/:uuid` → 204 (soft delete); inexistente ou já excluída → 404; uuid malformado → 400. Não exclui o agendamento. Permitido com paciente ou médico inativo.
+- `DELETE /appointments/:uuid` → **409** quando há `Observation` ativa. A checagem e a exclusão rodam em `$transaction` com `SELECT … FOR UPDATE` na linha do agendamento, o mesmo lock do `POST` de observação: nunca fica observação ativa em agendamento excluído (I4).
+- Decorators de Swagger das rotas novas e do 409 do `DELETE` de agendamento.
+- e2e de R6, do `DELETE` de observação, do 409 no `DELETE` de agendamento e das corridas PATCH × DELETE de observação e POST de observação × DELETE de agendamento.
+
+### Alterado
+
+- e2e do desempate por `id` na listagem (R7) passa a falhar sem o `orderBy` por `id`; novo e2e fixa que `GET /observations/:uuid` segue 200 com agendamento excluído.
+- `docs/domain.md` descreve o `DELETE` de agendamento como implementado e registra a diferença de leitura entre a consulta individual e a lista.
+- `version` do `package.json` e do Swagger para 0.20.0.
+
 ## [0.19.0] - 2026-10-21
 
 Fatia Observation 2/4 (#51, parte de #49): consulta e listagem de observações (R7).
@@ -310,6 +328,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.20.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.16.0...v0.17.0
