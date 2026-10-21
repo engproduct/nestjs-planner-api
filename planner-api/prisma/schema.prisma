@@ -61,22 +61,38 @@ model User {
 }
 
 model Appointment {
-  id          Int       @id @default(autoincrement())
-  uuid        String    @unique @db.Uuid // gerado pela aplicação (sem default no banco)
-  patientId   Int
-  patient     Patient   @relation(fields: [patientId], references: [id])
-  userId      Int // médico: User com role = DOCTOR (validado na aplicação)
-  user        User      @relation(fields: [userId], references: [id])
+  id           Int           @id @default(autoincrement())
+  uuid         String        @unique @db.Uuid // gerado pela aplicação (sem default no banco)
+  patientId    Int
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  userId       Int // médico: User com role = DOCTOR (validado na aplicação)
+  user         User          @relation(fields: [userId], references: [id])
   // Timestamptz: o instante é guardado sem depender do fuso da sessão.
-  startTime   DateTime  @db.Timestamptz(3)
-  endTime     DateTime  @db.Timestamptz(3)
-  description String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  startTime    DateTime      @db.Timestamptz(3)
+  endTime      DateTime      @db.Timestamptz(3)
+  description  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  observations Observation[]
 
   // O CHECK de I1 (startTime < endTime) vive só na migration
   // appointment_time_range_check: o Prisma 7.10 não o modela no schema.
   @@index([userId, startTime])
   @@map("appointments")
+}
+
+model Observation {
+  id            Int         @id @default(autoincrement())
+  uuid          String      @unique @db.Uuid // gerado pela aplicação (sem default no banco)
+  // Única referência (I6): paciente e médico vêm do agendamento.
+  appointmentId Int
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  message       String      @db.Text // 1 a 5000 caracteres, validado no domínio
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  @@index([appointmentId, createdAt])
+  @@map("observations")
 }

@@ -4,6 +4,29 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.18.0] - 2026-10-21
+
+Fatia Observation 1/4 (#50, parte de #49): registro de observação (R5).
+
+### Adicionado
+
+- `POST /appointments/:uuid/observations` → 201 com `uuid`, `appointmentUuid`, `message`, `createdAt` e `updatedAt`, sem ids internos. `message` obrigatória, com trim, de 1 a 5000 caracteres; ausente, vazia, só espaços, `null`, não string, longa demais ou campo extra (ex.: `patientUuid`, I6) → 400. Agendamento inexistente ou excluído → 404 (I4); paciente do agendamento excluído, ou médico excluído ou sem `role = DOCTOR` → **409** (histórico só leitura, como o `PATCH` de agendamento).
+- A criação roda em `$transaction` com `SELECT … FOR UPDATE` na linha do agendamento, o lock que o `DELETE` de agendamento usará na fatia 3/4.
+- Tabela `observations` (migration `observation`): única FK `appointmentId` (I5, I6), `message` em `Text`, `deletedAt` e índice `(appointmentId, createdAt)`. A migration não mexe no índice parcial `patient_email_active_unique`.
+- Entidade `Observation` (`register`, `changeMessage`, `markDeleted`, `restore`; imutável) com testes unitários, `ObservationsModule`, `ObservationsService`, mapper e DTOs.
+- e2e do R5 em `test/observations.e2e-spec.ts`.
+- `docs/domain.md`: decisões da fatia Observation (rotas, `message`, 409 de histórico só leitura, lock, `DELETE`, leituras R7/R8).
+
+### Corrigido
+
+- SQL cru respeita `DB_SCHEMA`: o `PrismaService` fixa o `search_path` da conexão (`options: -c search_path=<schema>`), pois o `schema` do `PrismaPg` só qualifica o SQL gerado pelo Prisma. Antes, com schema diferente de `public`, o `FOR UPDATE` do registro retornava 404 ou podia travar o agendamento errado. `DB_SCHEMA` passa a ser validado no boot como identificador simples (`/^[A-Za-z_][A-Za-z0-9_]*$/`).
+- `message` com byte NUL (`\u0000`) → 400 (DTO e entidade), em vez de 500 do Postgres.
+
+### Alterado
+
+- Os e2e e o CI passam a usar o schema `planner_test` (antes `public`), para que SQL cru sem schema falhe nos testes.
+- `version` do `package.json` e do Swagger para 0.18.0.
+
 ## [0.17.0] - 2026-10-20
 
 Correções da revisão adversarial do #46 (#47): corrida `PATCH`×`DELETE` e edição de histórico de paciente/médico inativo.
@@ -271,6 +294,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.18.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.14.0...v0.15.0

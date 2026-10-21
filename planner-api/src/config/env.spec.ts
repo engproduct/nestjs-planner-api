@@ -98,6 +98,24 @@ describe('validateEnv', () => {
     );
   });
 
+  it.each(['public', 'planner_test', '_x1'])(
+    'accepts DB_SCHEMA %s',
+    (schema) => {
+      expect(validateEnv({ ...validRaw, DB_SCHEMA: schema }).DB_SCHEMA).toBe(
+        schema,
+      );
+    },
+  );
+
+  it.each(['1abc', 'a-b', 'a b', 'a"b', "a'; DROP", 'a,b', 'a\\b'])(
+    'rejects DB_SCHEMA %j that is not a plain identifier',
+    (schema) => {
+      expect(() => validateEnv({ ...validRaw, DB_SCHEMA: schema })).toThrow(
+        /DB_SCHEMA/,
+      );
+    },
+  );
+
   it.each([
     ['development', true],
     ['test', true],

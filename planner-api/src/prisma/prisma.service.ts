@@ -19,8 +19,14 @@ export class PrismaService
       DB_NAME: config.get('DB_NAME', { infer: true }),
       DB_SCHEMA: config.get('DB_SCHEMA', { infer: true }),
     };
+    // O `schema` do PrismaPg só qualifica o SQL gerado pelo Prisma, e o driver
+    // ignora `?schema=` da URL. Sem `search_path`, o SQL cru ($queryRaw) cairia
+    // no `public`. DB_SCHEMA é validado como identificador simples em config/env.
     const adapter = new PrismaPg(
-      { connectionString: buildDatabaseUrl(database) },
+      {
+        connectionString: buildDatabaseUrl(database),
+        options: `-c search_path=${database.DB_SCHEMA}`,
+      },
       { schema: database.DB_SCHEMA },
     );
     super({ adapter });

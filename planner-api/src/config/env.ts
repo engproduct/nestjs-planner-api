@@ -23,7 +23,8 @@ const envSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_NAME: z.string().min(1),
-  DB_SCHEMA: z.string().min(1),
+  // Identificador simples: entra no `search_path` da conexão (PrismaService).
+  DB_SCHEMA: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
   SWAGGER_ENABLED: booleanString.optional(),
 });
 

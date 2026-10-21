@@ -140,7 +140,7 @@ O agregado referencia `Patient` e `User` por identidade. A camada de aplicação
 * **Intervalo:** I1 garantida pelo VO `TimeRange` (`DomainError` → 400); `start == end` também é 400. Agendamento no passado é permitido (registro de consultas realizadas); sem duração máxima.
 * **Referências:** paciente inexistente/excluído ou médico inexistente/excluído/`ADMIN` → 404, ao criar e ao trocar o médico. Se o paciente ou o médico for excluído depois, o agendamento continua visível (histórico, R10) e passa a ser **só leitura**: `PATCH` em agendamento cujo paciente está excluído, ou cujo médico atual está excluído ou sem `role = DOCTOR`, → **409**, para qualquer corpo (só `description`, o mesmo `doctorUuid`, troca para um médico válido e até `{}`). O `DELETE` desse agendamento continua permitido (#47).
 * **PATCH:** edita `startTime`, `endTime`, `description` e `doctorUuid`; `patientUuid` é imutável (400). O intervalo é validado com os valores combinados (atuais + novos). `doctorUuid` igual ao atual (sem diferenciar maiúsculas/minúsculas) não revalida o médico. Ordem das checagens: agendamento inexistente/excluído → 404; paciente ou médico atual inativo → 409; regras do agregado (I1, `description`) → 400; novo médico inválido → 404. A gravação exige `deletedAt` nulo: se o agendamento for excluído entre a leitura e a escrita, o `PATCH` responde 404 (o mesmo vale para `PATCH /patients/:uuid`).
-* **DELETE:** soft delete → 204; inexistente ou já excluído → 404; **409 se houver `Observation` ativa** (implementado na fatia Observation).
+* **DELETE:** soft delete → 204; inexistente ou já excluído → 404; **409 se houver `Observation` ativa** (entra na fatia Observation 3/4, #52). Deve rodar em `$transaction` com lock da linha (`SELECT … FOR UPDATE`), o mesmo do `POST` de observação (ver Decisões de Spec da fatia Observation).
 * **Listagem:** paginada como a de Patient, ordenada por `startTime` e, em empate, por `id`; sem filtros nesta fatia (a Auth restringirá ao médico logado).
 * **Limitação consciente de tempo (#27):** `startTime`/`endTime` guardam um instante em UTC (`Timestamptz`), sem o offset nem o fuso de origem. Basta para clínica única e para comparação e sobreposição (R9). Fica fora de escopo o fuso IANA da clínica (`timeZone`, ex.: `America/Sao_Paulo`), necessário para exibir no horário local da clínica, para agendamentos futuros que sobrevivam a mudanças de horário de verão e para recorrência; se a internacionalização virar requisito, adiciona-se essa coluna, sem trocar o tipo. `createdAt`/`updatedAt` seguem `timestamp(3)` sem fuso, no padrão de `patients`/`users` (o Prisma grava em UTC).
 
@@ -182,6 +182,17 @@ Uma `Observation` representa uma anotação clínica registrada no contexto de u
 * A exclusão de uma `Observation` não exclui o `Appointment`.
 * A alteração dos dados do `Patient` ou `User` não altera o conteúdo histórico da `Observation`.
 * A `Observation` mantém sua própria identidade (`uuid`).
+
+**Decisões de Spec (fatia Observation, #49):**
+
+* **Rotas:** `POST /appointments/:uuid/observations` (201), `GET /appointments/:uuid/observations` (R7, paginado), `GET /observations/:uuid`, `PATCH /observations/:uuid` (R6), `DELETE /observations/:uuid` (204, soft delete) e `GET /patients/:uuid/observations` (R8, paginado). Só o `uuid` é exposto; a resposta traz `uuid`, `appointmentUuid`, `message`, `createdAt` e `updatedAt`.
+* **Modelo (I5, I6):** a tabela `observations` tem uma única FK, `appointmentId`; não há `patientId` nem `userId`. O paciente e o médico vêm do agendamento.
+* **`message`:** obrigatória, com trim, de 1 a 5000 caracteres (coluna `Text`); ausente, vazia, só espaços, `null`, não string ou longa demais → 400. Campos extras (ex.: `patientUuid`) → 400. A regra vive na entidade `Observation` (`register`, `changeMessage`, `markDeleted`) e lança `DomainError`.
+* **I4:** agendamento inexistente ou excluído → 404, ao criar e ao listar.
+* **Histórico só leitura:** se o paciente do agendamento estiver excluído, ou o médico estiver excluído ou sem `role = DOCTOR`, criar ou editar observação → **409**, como o `PATCH` de agendamento (#47). A leitura continua liberada. Ordem das checagens no `POST`: `message` → 400; agendamento inexistente/excluído → 404; paciente ou médico inativo → 409.
+* **Concorrência:** o `POST` de observação roda em `$transaction` com lock da linha do agendamento (`SELECT … FOR UPDATE`) desde a fatia 1/4 (#50); o `DELETE` de agendamento passa a usar o mesmo lock na fatia 3/4 (#52). Com os dois, um agendamento não é excluído enquanto uma observação é criada. `PATCH` e `DELETE` de observação gravam com `deletedAt: null` no `where`: se a observação for excluída entre a leitura e a escrita, a resposta é 404.
+* **DELETE de observação:** soft delete → 204; inexistente ou já excluída → 404. Não exclui o agendamento.
+* **Leituras:** paginação igual à de Patient. R7 ordena por `createdAt` e, em empate, por `id`. R8 ordena por `appointment.startTime`, depois `createdAt` e `id`. Observações excluídas não aparecem; as de agendamento ou paciente excluído continuam no histórico de R8, porque o paciente só some com o LGPD (R10).
 
 ---
 
