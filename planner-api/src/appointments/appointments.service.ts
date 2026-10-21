@@ -181,14 +181,29 @@ export class AppointmentsService {
   }
 
   async remove(uuid: string): Promise<void> {
-    // Fora de escopo aqui: com Observation ativa o DELETE deve responder 409
-    // (domain.md, Appointment › DELETE); entra na fatia Observation.
-    const { count } = await this.prisma.appointment.updateMany({
-      where: { uuid, deletedAt: null },
-      data: { deletedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      // Mesmo lock do POST de observação: ou a observação é criada antes e
+      // aqui vira 409, ou o agendamento é excluído antes e o POST dá 404 (I4).
+      const locked = await tx.$queryRaw<{ id: number }[]>`
+        SELECT id FROM appointments
+        WHERE uuid = ${uuid}::uuid AND "deletedAt" IS NULL
+        FOR UPDATE
+      `;
+      if (locked.length === 0) {
+        throw new NotFoundException('Appointment not found');
+      }
+      const active = await tx.observation.count({
+        where: { appointmentId: locked[0].id, deletedAt: null },
+      });
+      if (active > 0) {
+        throw new ConflictException(
+          'Appointment with active observations cannot be deleted',
+        );
+      }
+      await tx.appointment.update({
+        where: { id: locked[0].id },
+        data: { deletedAt: new Date() },
+      });
     });
-    if (count === 0) {
-      throw new NotFoundException('Appointment not found');
-    }
   }
 }

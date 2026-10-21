@@ -87,6 +87,7 @@ export class AppointmentsController {
   @ApiNoContentResponse({ description: 'Agendamento excluído (soft delete)' })
   @ApiBadRequestResponse({ description: 'uuid inválido' })
   @ApiNotFoundResponse({ description: 'Agendamento inexistente ou excluído' })
+  @ApiConflictResponse({ description: 'Agendamento com observação ativa' })
   remove(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<void> {
     return this.appointmentsService.remove(uuid);
   }
