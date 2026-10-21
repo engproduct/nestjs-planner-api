@@ -78,6 +78,12 @@ describe('Observations (e2e)', () => {
       expect(body.message).toBe('texto');
     });
 
+    it('R5: rejects a NUL byte in the message with 400', async () => {
+      const { body } = await post({ message: 'a\u0000b' }).expect(400);
+
+      expect(Array.isArray(body.message)).toBe(true);
+    });
+
     it('R5: accepts a message of exactly 5000 characters', async () => {
       await post({ message: 'a'.repeat(5000) }).expect(201);
     });

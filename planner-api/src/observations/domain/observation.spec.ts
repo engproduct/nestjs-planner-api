@@ -55,6 +55,20 @@ describe('Observation', () => {
     });
   });
 
+  describe('NUL byte', () => {
+    it('rejects a message with a NUL byte on register', () => {
+      expect(() =>
+        Observation.register({ appointmentUuid, message: 'a\u0000b' }),
+      ).toThrow(DomainError);
+    });
+
+    it('rejects a message with a NUL byte on changeMessage', () => {
+      const original = Observation.register({ appointmentUuid, message: 'a' });
+
+      expect(() => original.changeMessage('a\u0000b')).toThrow(DomainError);
+    });
+  });
+
   describe('changeMessage', () => {
     const original = Observation.register({ appointmentUuid, message: 'a' });
 
