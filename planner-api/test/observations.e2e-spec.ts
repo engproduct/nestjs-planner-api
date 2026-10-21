@@ -110,7 +110,7 @@ describe('Observations (e2e)', () => {
       ['a number', { message: 123 }],
       ['an array', { message: ['x'] }],
       ['with an extra field', { message: 'x', extra: 1 }],
-      ['with patientUuid (I6)', { message: 'x', patientUuid }],
+      ['with patientUuid (I6)', { message: 'x', patientUuid: unknownUuid }],
     ])('R5: rejects with 400 when the body is %s', async (_name, body) => {
       const { body: error } = await post(body).expect(400);
 
@@ -133,23 +133,19 @@ describe('Observations (e2e)', () => {
     });
 
     it('returns 409 when the appointment patient is deleted', async () => {
-      await app
-        .get(PrismaService)
-        .patient.update({
-          where: { uuid: patientUuid },
-          data: { deletedAt: new Date() },
-        });
+      await app.get(PrismaService).patient.update({
+        where: { uuid: patientUuid },
+        data: { deletedAt: new Date() },
+      });
 
       await post({ message: 'x' }).expect(409);
     });
 
     it('returns 409 when the appointment doctor is deleted', async () => {
-      await app
-        .get(PrismaService)
-        .user.update({
-          where: { uuid: doctorUuid },
-          data: { deletedAt: new Date() },
-        });
+      await app.get(PrismaService).user.update({
+        where: { uuid: doctorUuid },
+        data: { deletedAt: new Date() },
+      });
 
       await post({ message: 'x' }).expect(409);
     });
