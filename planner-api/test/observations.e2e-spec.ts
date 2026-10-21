@@ -174,6 +174,7 @@ describe('Observations (e2e)', () => {
       createdAt?: Date;
       deletedAt?: Date;
       appointmentUuid?: string;
+      id?: number;
     } = {},
   ) => {
     const prisma = app.get(PrismaService);
@@ -182,6 +183,7 @@ describe('Observations (e2e)', () => {
     });
     return prisma.observation.create({
       data: {
+        id: extra.id,
         uuid: randomUUID(),
         appointmentId: appointment.id,
         message,
@@ -229,7 +231,10 @@ describe('Observations (e2e)', () => {
 
     it('R7: breaks createdAt ties by id and paginates stably', async () => {
       const createdAt = new Date('2026-10-20T14:00:00Z');
-      for (const m of ['a', 'b', 'c']) await seed(m, { createdAt });
+      // Ordem de inserção (c, a, b) difere da ordem por id (a, b, c).
+      await seed('c', { createdAt, id: 1_000_000 });
+      await seed('a', { createdAt });
+      await seed('b', { createdAt });
 
       const first = await list('?page=1&limit=2').expect(200);
       const second = await list('?page=2&limit=2').expect(200);
@@ -323,6 +328,16 @@ describe('Observations (e2e)', () => {
 
     it('returns 400 for a malformed uuid', async () => {
       await api(app).get('/observations/not-a-uuid').expect(400);
+    });
+
+    it('returns 200 when the appointment is deleted', async () => {
+      const created = await seed('histórico');
+      await app.get(PrismaService).appointment.update({
+        where: { uuid: appointmentUuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).get(`/observations/${created.uuid}`).expect(200);
     });
 
     it('allows reading when the patient and the doctor are inactive', async () => {
