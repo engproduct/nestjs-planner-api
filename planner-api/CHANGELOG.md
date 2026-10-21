@@ -4,6 +4,22 @@ Todas as mudanças relevantes deste projeto são documentadas aqui.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adota [SemVer](https://semver.org/lang/pt-BR/) `0.x`: cada PR da fatia entregue corresponde a uma versão minor.
 
+## [0.19.0] - 2026-10-21
+
+Fatia Observation 2/4 (#51, parte de #49): consulta e listagem de observações (R7).
+
+### Adicionado
+
+- `GET /appointments/:uuid/observations` → 200 paginado como Patient (`page`/`limit`, envelope `data` + `meta`), ordenado por `createdAt` e, em empate, por `id`. Não lista observações excluídas. Agendamento inexistente ou excluído → 404; uuid malformado ou paginação inválida → 400. Lista vazia → 200 com `data: []`.
+- `GET /observations/:uuid` → 200; inexistente ou excluída → 404; uuid malformado → 400.
+- As leituras continuam liberadas com paciente ou médico do agendamento inativo; só as escritas recebem 409.
+- Decorators de Swagger das duas rotas (`ApiPaginatedResponse`, 400 e 404).
+- e2e do R7 em `test/observations.e2e-spec.ts`.
+
+### Alterado
+
+- `version` do `package.json` e do Swagger para 0.19.0.
+
 ## [0.18.0] - 2026-10-21
 
 Fatia Observation 1/4 (#50, parte de #49): registro de observação (R5).
@@ -294,6 +310,7 @@ Fundação técnica 1/5 (#8, parte de #5).
 
 Baseline: scaffold NestJS e harness de desenvolvimento (documentação em `docs/`, template de PR e validação).
 
+[0.19.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/engproduct/nestjs-planner-api/compare/v0.15.0...v0.16.0
