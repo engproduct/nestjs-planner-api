@@ -104,6 +104,8 @@ export class ObservationsService {
     return paginated(observations.map(toObservationResponse), total, query);
   }
 
+  // Filtra só a própria observação: o histórico segue legível (R10), e o
+  // DELETE de agendamento com observação ativa dará 409 (fatia 3/4, #52).
   async findOne(uuid: string): Promise<ObservationResponseDto> {
     const observation = await this.prisma.observation.findFirst({
       where: { uuid, deletedAt: null },
