@@ -6,10 +6,12 @@ import {
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
 import { Paginated, paginated } from '../common/pagination/paginated.js';
 import { Role } from '../generated/prisma/enums.js';
+import { isNotFound } from '../prisma/prisma-errors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Observation } from './domain/observation.js';
 import { CreateObservationDto } from './dto/create-observation.dto.js';
 import { ObservationResponseDto } from './dto/observation-response.dto.js';
+import { UpdateObservationDto } from './dto/update-observation.dto.js';
 import {
   observationInclude,
   toObservationResponse,
@@ -31,9 +33,9 @@ export class ObservationsService {
 
     return this.prisma.$transaction(async (tx) => {
       // Trava a linha do agendamento até o fim da transação. O DELETE de
-      // agendamento passará a usar o mesmo lock (fatia 3/4, #52); então ele
-      // não exclui o agendamento enquanto a observação é criada (I4). O SQL
-      // cru não leva schema: a conexão fixa o `search_path` em DB_SCHEMA.
+      // agendamento usa o mesmo lock, então não exclui o agendamento enquanto
+      // a observação é criada (I4). O SQL cru não leva schema: a conexão fixa
+      // o `search_path` em DB_SCHEMA.
       const locked = await tx.$queryRaw<{ id: number }[]>`
         SELECT id FROM appointments
         WHERE uuid = ${appointmentUuid}::uuid AND "deletedAt" IS NULL
@@ -105,7 +107,7 @@ export class ObservationsService {
   }
 
   // Filtra só a própria observação: o histórico segue legível (R10), e o
-  // DELETE de agendamento com observação ativa dará 409 (fatia 3/4, #52).
+  // DELETE de agendamento com observação ativa dá 409.
   async findOne(uuid: string): Promise<ObservationResponseDto> {
     const observation = await this.prisma.observation.findFirst({
       where: { uuid, deletedAt: null },
@@ -115,5 +117,73 @@ export class ObservationsService {
       throw new NotFoundException('Observation not found');
     }
     return toObservationResponse(observation);
+  }
+
+  async update(
+    uuid: string,
+    dto: UpdateObservationDto,
+  ): Promise<ObservationResponseDto> {
+    const current = await this.prisma.observation.findFirst({
+      where: { uuid, deletedAt: null },
+      include: {
+        appointment: {
+          select: {
+            uuid: true,
+            patient: { select: { deletedAt: true } },
+            user: { select: { deletedAt: true, role: true } },
+          },
+        },
+      },
+    });
+    if (!current) {
+      throw new NotFoundException('Observation not found');
+    }
+    // Histórico de paciente ou médico inativo é só leitura (R10): 409 antes
+    // da regra de message, como no POST e no PATCH de agendamento.
+    const { patient, user } = current.appointment;
+    if (
+      patient.deletedAt !== null ||
+      user.deletedAt !== null ||
+      user.role !== Role.DOCTOR
+    ) {
+      throw new ConflictException(
+        'Appointment of a deleted patient or inactive doctor is read-only',
+      );
+    }
+
+    const observation = Observation.restore({
+      uuid: current.uuid,
+      appointmentUuid: current.appointment.uuid,
+      message: current.message,
+      deletedAt: null,
+    }).changeMessage(dto.message);
+
+    // deletedAt: null na gravação: um DELETE entre a leitura e a escrita
+    // vira P2025 (404) em vez de editar uma observação excluída.
+    try {
+      const updated = await this.prisma.observation.update({
+        where: { id: current.id, deletedAt: null },
+        data: { message: observation.message },
+        include: observationInclude,
+      });
+      return toObservationResponse(updated);
+    } catch (error) {
+      if (isNotFound(error)) {
+        throw new NotFoundException('Observation not found');
+      }
+      throw error;
+    }
+  }
+
+  // Permitido com paciente ou médico inativo: excluir não edita o histórico
+  // clínico, e o DELETE de agendamento também segue permitido (#47).
+  async remove(uuid: string): Promise<void> {
+    const { count } = await this.prisma.observation.updateMany({
+      where: { uuid, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (count === 0) {
+      throw new NotFoundException('Observation not found');
+    }
   }
 }

@@ -1,7 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
   Param,
   ParseUUIDPipe,
   Post,
@@ -11,6 +15,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
@@ -20,6 +25,7 @@ import { Paginated } from '../common/pagination/paginated.js';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
 import { CreateObservationDto } from './dto/create-observation.dto.js';
 import { ObservationResponseDto } from './dto/observation-response.dto.js';
+import { UpdateObservationDto } from './dto/update-observation.dto.js';
 import { ObservationsService } from './observations.service.js';
 
 @ApiTags('observations')
@@ -61,5 +67,29 @@ export class ObservationsController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<ObservationResponseDto> {
     return this.observationsService.findOne(uuid);
+  }
+
+  @Patch('observations/:uuid')
+  @ApiOkResponse({ type: ObservationResponseDto })
+  @ApiBadRequestResponse({ description: 'uuid ou message inválidos' })
+  @ApiNotFoundResponse({ description: 'Observação inexistente ou excluída' })
+  @ApiConflictResponse({
+    description:
+      'Paciente excluído ou médico excluído/sem role DOCTOR: histórico só leitura',
+  })
+  update(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdateObservationDto,
+  ): Promise<ObservationResponseDto> {
+    return this.observationsService.update(uuid, dto);
+  }
+
+  @Delete('observations/:uuid')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'Observação excluída (soft delete)' })
+  @ApiBadRequestResponse({ description: 'uuid inválido' })
+  @ApiNotFoundResponse({ description: 'Observação inexistente ou excluída' })
+  remove(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<void> {
+    return this.observationsService.remove(uuid);
   }
 }

@@ -174,6 +174,7 @@ describe('Observations (e2e)', () => {
       createdAt?: Date;
       deletedAt?: Date;
       appointmentUuid?: string;
+      id?: number;
     } = {},
   ) => {
     const prisma = app.get(PrismaService);
@@ -182,6 +183,7 @@ describe('Observations (e2e)', () => {
     });
     return prisma.observation.create({
       data: {
+        id: extra.id,
         uuid: randomUUID(),
         appointmentId: appointment.id,
         message,
@@ -229,7 +231,10 @@ describe('Observations (e2e)', () => {
 
     it('R7: breaks createdAt ties by id and paginates stably', async () => {
       const createdAt = new Date('2026-10-20T14:00:00Z');
-      for (const m of ['a', 'b', 'c']) await seed(m, { createdAt });
+      // Ordem de inserção (c, a, b) difere da ordem por id (a, b, c).
+      await seed('c', { createdAt, id: 1_000_000 });
+      await seed('a', { createdAt });
+      await seed('b', { createdAt });
 
       const first = await list('?page=1&limit=2').expect(200);
       const second = await list('?page=2&limit=2').expect(200);
@@ -325,6 +330,16 @@ describe('Observations (e2e)', () => {
       await api(app).get('/observations/not-a-uuid').expect(400);
     });
 
+    it('returns 200 when the appointment is deleted', async () => {
+      const created = await seed('histórico');
+      await app.get(PrismaService).appointment.update({
+        where: { uuid: appointmentUuid },
+        data: { deletedAt: new Date() },
+      });
+
+      await api(app).get(`/observations/${created.uuid}`).expect(200);
+    });
+
     it('allows reading when the patient and the doctor are inactive', async () => {
       const created = await seed('histórico');
       const prisma = app.get(PrismaService);
@@ -338,6 +353,251 @@ describe('Observations (e2e)', () => {
       });
 
       await api(app).get(`/observations/${created.uuid}`).expect(200);
+    });
+  });
+
+  const deactivate = {
+    'patient is deleted': () =>
+      app.get(PrismaService).patient.update({
+        where: { uuid: patientUuid },
+        data: { deletedAt: new Date() },
+      }),
+    'doctor is deleted': () =>
+      app.get(PrismaService).user.update({
+        where: { uuid: doctorUuid },
+        data: { deletedAt: new Date() },
+      }),
+    'doctor is not a DOCTOR anymore': () =>
+      app.get(PrismaService).user.update({
+        where: { uuid: doctorUuid },
+        data: { role: 'ADMIN' },
+      }),
+  };
+
+  describe('PATCH /observations/:uuid', () => {
+    const patch = (uuid: string, body: object) =>
+      api(app).patch(`/observations/${uuid}`).send(body);
+
+    it('R6: updates the message (trimmed) and advances updatedAt', async () => {
+      const created = await seed('antes');
+
+      const { body } = await patch(created.uuid, {
+        message: '  depois \n',
+      }).expect(200);
+
+      expect(body).toEqual({
+        uuid: created.uuid,
+        appointmentUuid,
+        message: 'depois',
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: expect.any(String),
+      });
+      expect(new Date(body.updatedAt).getTime()).toBeGreaterThan(
+        created.updatedAt.getTime(),
+      );
+      const { body: read } = await api(app)
+        .get(`/observations/${created.uuid}`)
+        .expect(200);
+      expect(read.message).toBe('depois');
+    });
+
+    it.each([
+      ['missing', {}],
+      ['empty', { message: '' }],
+      ['only spaces', { message: '   ' }],
+      ['null', { message: null }],
+      ['too long', { message: 'a'.repeat(5001) }],
+      ['with a NUL byte', { message: 'a\u0000b' }],
+      ['a number', { message: 123 }],
+      ['an array', { message: ['x'] }],
+      ['with an extra field', { message: 'x', extra: 1 }],
+      ['with appointmentUuid', { message: 'x', appointmentUuid: unknownUuid }],
+    ])('R6: rejects with 400 when the body is %s', async (_name, body) => {
+      const created = await seed('antes');
+
+      const { body: error } = await patch(created.uuid, body).expect(400);
+
+      expect(Array.isArray(error.message)).toBe(true);
+      const row = await app
+        .get(PrismaService)
+        .observation.findUniqueOrThrow({ where: { uuid: created.uuid } });
+      expect(row.message).toBe('antes');
+    });
+
+    it('R6: accepts a message of exactly 5000 characters', async () => {
+      const created = await seed('antes');
+
+      await patch(created.uuid, { message: 'a'.repeat(5000) }).expect(200);
+    });
+
+    it('R6: returns 400 for a malformed uuid', async () => {
+      await patch('not-a-uuid', { message: 'x' }).expect(400);
+    });
+
+    it('R6: returns 404 for an unknown observation', async () => {
+      await patch(unknownUuid, { message: 'x' }).expect(404);
+    });
+
+    it('R6: returns 404 for a deleted observation', async () => {
+      const created = await seed('x', { deletedAt: new Date() });
+
+      await patch(created.uuid, { message: 'y' }).expect(404);
+    });
+
+    it('R6: returns 404 before 409 for a deleted observation of an inactive patient', async () => {
+      const created = await seed('x', { deletedAt: new Date() });
+      await deactivate['patient is deleted']();
+
+      await patch(created.uuid, { message: 'y' }).expect(404);
+    });
+
+    it.each(Object.keys(deactivate) as (keyof typeof deactivate)[])(
+      'R10: returns 409 and changes nothing when the %s',
+      async (scenario) => {
+        const created = await seed('antes');
+        await deactivate[scenario]();
+
+        await patch(created.uuid, { message: 'depois' }).expect(409);
+
+        const row = await app
+          .get(PrismaService)
+          .observation.findUniqueOrThrow({ where: { uuid: created.uuid } });
+        expect(row.message).toBe('antes');
+      },
+    );
+
+    it('R10: returns 409 before the message rule (domain 400)', async () => {
+      const created = await seed('antes');
+      await deactivate['patient is deleted']();
+
+      await patch(created.uuid, { message: '   ' }).expect(409);
+    });
+
+    it('R6: returns 404 when the observation is deleted between read and write', async () => {
+      const created = await seed('antes');
+      const prisma = app.get(PrismaService);
+      const delegate = prisma.observation;
+      const findFirst = delegate.findFirst.bind(delegate);
+      // Simula um DELETE concorrente: exclui a linha logo após a leitura do PATCH.
+      const spy = vi
+        .spyOn(delegate, 'findFirst')
+        .mockImplementationOnce((async (args: unknown) => {
+          const found = await findFirst(args as never);
+          await prisma.observation.updateMany({
+            where: { uuid: created.uuid },
+            data: { deletedAt: new Date() },
+          });
+          return found;
+        }) as never);
+
+      try {
+        await patch(created.uuid, { message: 'depois' }).expect(404);
+      } finally {
+        spy.mockRestore();
+      }
+
+      const row = await prisma.observation.findUniqueOrThrow({
+        where: { uuid: created.uuid },
+      });
+      expect(row.message).toBe('antes');
+      expect(row.deletedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('DELETE /observations/:uuid', () => {
+    const del = (uuid: string) => api(app).delete(`/observations/${uuid}`);
+
+    it('soft deletes with 204, hiding it from GET and the list, keeping the appointment', async () => {
+      const created = await seed('x');
+      await seed('fica');
+
+      await del(created.uuid).expect(204).expect('');
+
+      await api(app).get(`/observations/${created.uuid}`).expect(404);
+      const { body } = await api(app)
+        .get(`/appointments/${appointmentUuid}/observations`)
+        .expect(200);
+      expect(body.meta.total).toBe(1);
+      await api(app).get(`/appointments/${appointmentUuid}`).expect(200);
+      const row = await app
+        .get(PrismaService)
+        .observation.findUniqueOrThrow({ where: { uuid: created.uuid } });
+      expect(row.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it('returns 404 when deleting twice', async () => {
+      const created = await seed('x');
+
+      await del(created.uuid).expect(204);
+      await del(created.uuid).expect(404);
+    });
+
+    it('returns 404 for an unknown observation', async () => {
+      await del(unknownUuid).expect(404);
+    });
+
+    it('returns 400 for a malformed uuid', async () => {
+      await del('not-a-uuid').expect(400);
+    });
+
+    it.each(Object.keys(deactivate) as (keyof typeof deactivate)[])(
+      'is allowed when the %s',
+      async (scenario) => {
+        const created = await seed('x');
+        await deactivate[scenario]();
+
+        await del(created.uuid).expect(204);
+      },
+    );
+  });
+
+  describe('DELETE /appointments/:uuid with observations', () => {
+    const delAppointment = () =>
+      api(app).delete(`/appointments/${appointmentUuid}`);
+
+    it('returns 409 when there is an active observation and keeps the appointment', async () => {
+      await seed('ativa');
+
+      await delAppointment().expect(409);
+
+      await api(app).get(`/appointments/${appointmentUuid}`).expect(200);
+    });
+
+    it('returns 204 when there are only deleted observations', async () => {
+      await seed('excluída', { deletedAt: new Date() });
+
+      await delAppointment().expect(204);
+    });
+
+    it('returns 204 after deleting the observations through the API', async () => {
+      const created = await seed('ativa');
+      await delAppointment().expect(409);
+
+      await api(app).delete(`/observations/${created.uuid}`).expect(204);
+
+      await delAppointment().expect(204);
+    });
+
+    it('I4: never leaves an active observation on a deleted appointment (POST x DELETE race)', async () => {
+      const [created, deleted] = await Promise.all([
+        post({ message: 'x' }),
+        delAppointment(),
+      ]);
+
+      if (created.status === 201) {
+        expect(deleted.status).toBe(409);
+      } else {
+        expect(created.status).toBe(404);
+        expect(deleted.status).toBe(204);
+      }
+      const prisma = app.get(PrismaService);
+      const appointment = await prisma.appointment.findUniqueOrThrow({
+        where: { uuid: appointmentUuid },
+      });
+      const active = await prisma.observation.count({
+        where: { appointmentId: appointment.id, deletedAt: null },
+      });
+      expect(appointment.deletedAt !== null && active > 0).toBe(false);
     });
   });
 });
