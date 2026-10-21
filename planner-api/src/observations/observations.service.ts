@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto.js';
+import { Paginated, paginated } from '../common/pagination/paginated.js';
 import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Observation } from './domain/observation.js';
@@ -72,5 +74,44 @@ export class ObservationsService {
       });
       return toObservationResponse(created);
     });
+  }
+
+  // Leitura (R7): vale mesmo com paciente ou médico inativo; só a escrita
+  // recebe 409. Sem transação nem lock: é um retrato de leitura.
+  async listByAppointment(
+    appointmentUuid: string,
+    query: PaginationQueryDto,
+  ): Promise<Paginated<ObservationResponseDto>> {
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { uuid: appointmentUuid, deletedAt: null },
+      select: { id: true },
+    });
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+    const where = { appointmentId: appointment.id, deletedAt: null };
+    const [observations, total] = await this.prisma.$transaction([
+      this.prisma.observation.findMany({
+        where,
+        include: observationInclude,
+        // id desempata createdAt iguais: a paginação não repete nem pula.
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.observation.count({ where }),
+    ]);
+    return paginated(observations.map(toObservationResponse), total, query);
+  }
+
+  async findOne(uuid: string): Promise<ObservationResponseDto> {
+    const observation = await this.prisma.observation.findFirst({
+      where: { uuid, deletedAt: null },
+      include: observationInclude,
+    });
+    if (!observation) {
+      throw new NotFoundException('Observation not found');
+    }
+    return toObservationResponse(observation);
   }
 }
